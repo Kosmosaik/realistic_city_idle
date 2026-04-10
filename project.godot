@@ -10,9 +10,25 @@ config_version=5
 
 [application]
 
-config/name="realistic_city_idle"
+config/name="Realistic City Idle"
+config/version="0.0.1-dev"
+run/main_scene="uid://bf7c5yb4xh5q2"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*uid://c7ahpsjvpcv7n"
+TelemetryService="*uid://i7fesex41jkb"
+SaveService="*uid://dfqtt2xymi1ed"
+TimeService="*uid://cu3kl7b4mfymy"
+SimRoot="*uid://ct1x1ngyik8lg"
+AppRoot="*uid://b4wy1w22gscwq"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
 
 [physics]
 
