@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Foraging"
+description = "Basic plant gathering and edible scouting skill."
+sort_index = 10
+tags = PackedStringArray("early_skill")
+skill_id = "foraging"
+category_tags = PackedStringArray("food", "gathering")
+is_hidden = false

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StageDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/stage_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Lone Survivor"
+description = "Single-person survival phase before stable camp infrastructure."
+sort_index = 10
+tags = PackedStringArray("mvp", "stage")
+stage_id = "stage.lone_survivor"
+stage_rank = 1
+progression_tags = PackedStringArray("survival", "starter")

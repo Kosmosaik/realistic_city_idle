@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Untreated Water"
+description = "Collected raw surface water that is not yet treated."
+sort_index = 10
+tags = PackedStringArray("water", "liquid")
+item_def_id = "itm_water_raw_clear"
+stack_limit = 50
+is_liquid = true
+function_tags = PackedStringArray("drink", "boil_input")
+storage_tags = PackedStringArray("liquid", "dirty")
+need_tags = PackedStringArray("need_hydration")

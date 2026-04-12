@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Collect Water"
+description = "Bring untreated water from a nearby water source."
+sort_index = 10
+tags = PackedStringArray("water", "starter_process")
+process_def_id = "pro_collect_water"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray("itm_water_raw_clear")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("water_handling")
+required_zone_type_ids = PackedStringArray("zone_type_water_fetch")
+task_def_id = "tsk_fetch_water"
+duration_hours = 0.5
+is_interruptible = true

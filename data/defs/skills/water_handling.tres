@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Water Handling"
+description = "Basic collection, carrying, and treatment of camp water."
+sort_index = 20
+tags = PackedStringArray("early_skill")
+skill_id = "water_handling"
+category_tags = PackedStringArray("water", "survival")
+is_hidden = false

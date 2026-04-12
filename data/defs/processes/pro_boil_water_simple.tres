@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Boil Water"
+description = "Simple early boiling process for producing safe water."
+sort_index = 20
+tags = PackedStringArray("water", "starter_process")
+process_def_id = "pro_boil_water_simple"
+input_item_def_ids = PackedStringArray("itm_water_raw_clear")
+output_item_def_ids = PackedStringArray("itm_water_boiled_safe")
+required_structure_def_ids = PackedStringArray("str_fire_hearth_stone_small")
+required_skill_ids = PackedStringArray("water_handling")
+required_zone_type_ids = PackedStringArray("zone_type_hearth")
+task_def_id = "tsk_fetch_water"
+duration_hours = 1.0
+is_interruptible = false
