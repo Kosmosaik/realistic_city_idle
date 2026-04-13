@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Store Seed Protected"
+description = "Move seed into a deliberately protected dry reserve instead of treating it as food."
+sort_index = 400
+tags = PackedStringArray("primitive_camp_process", "seed")
+process_def_id = "pro_store_seed_protected"
+input_item_def_ids = PackedStringArray("itm_seed_saved_mixed")
+output_item_def_ids = PackedStringArray("itm_seed_saved_mixed")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("gardening")
+required_zone_type_ids = PackedStringArray("zone_type_seed_storage")
+task_def_id = "tsk_protect_seed"
+duration_hours = 0.25
+is_interruptible = true

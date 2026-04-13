@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Create Fuel Stack"
+description = "Sort and place gathered fuel into a more reliable dry stack."
+sort_index = 280
+tags = PackedStringArray("primitive_camp_process", "fuel")
+process_def_id = "pro_create_fuel_stack"
+input_item_def_ids = PackedStringArray("itm_wood_twig_dry", "itm_wood_branch_dry_small")
+output_item_def_ids = PackedStringArray("itm_fuelwood_bundle_mixed")
+required_structure_def_ids = PackedStringArray("str_fuel_stack_basic")
+required_skill_ids = PackedStringArray("fuel_selection")
+required_zone_type_ids = PackedStringArray("zone_type_outer_cache")
+task_def_id = "tsk_sort_storage"
+duration_hours = 0.5
+is_interruptible = true

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Hide Scraping"
+description = "Removing flesh and residue from fresh hide for later use."
+sort_index = 130
+tags = PackedStringArray("core_skill", "hide_work")
+skill_id = "hide_scraping"
+category_tags = PackedStringArray("hide", "processing")
+is_hidden = false

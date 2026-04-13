@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Mixed Wild Fibers"
+description = "A rough mixed fiber bundle useful for cordage and primitive container work."
+sort_index = 320
+tags = PackedStringArray("fiber", "material")
+item_def_id = "itm_fiber_raw_mixed"
+stack_limit = 12
+is_liquid = false
+function_tags = PackedStringArray("cordage_input", "basket_input")
+storage_tags = PackedStringArray("covered")
+need_tags = PackedStringArray()

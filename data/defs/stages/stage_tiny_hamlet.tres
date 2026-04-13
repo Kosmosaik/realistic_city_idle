@@ -1,13 +1,13 @@
-[gd_resource type="Resource" script_class="StageDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="StageDef" format=3 uid="uid://c1qcbdetwghg5"]
 
-[ext_resource type="Script" path="res://scripts/core/defs/stage_def.gd" id="1"]
+[ext_resource type="Script" uid="uid://dwmy2ncb5pqft" path="res://scripts/core/defs/stage_def.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+stage_id = "stage.tiny_hamlet"
+stage_rank = 4
+progression_tags = PackedStringArray("hamlet")
 display_name = "Tiny Hamlet"
 description = "Earliest small-settlement phase with persistent place identity."
 sort_index = 40
 tags = PackedStringArray("mvp", "stage")
-stage_id = "stage.tiny_hamlet"
-stage_rank = 4
-progression_tags = PackedStringArray("hamlet")

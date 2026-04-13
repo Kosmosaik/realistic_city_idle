@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Knap Simple Flake"
+description = "Break a workable core to produce a simple sharp stone flake."
+sort_index = 120
+tags = PackedStringArray("starter_process", "toolmaking")
+process_def_id = "pro_knap_simple_flake"
+input_item_def_ids = PackedStringArray("itm_stone_core")
+output_item_def_ids = PackedStringArray("itm_stone_sharp_flake")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("primitive_toolmaking", "stone_knapping")
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_make_tool"
+duration_hours = 0.4
+is_interruptible = false

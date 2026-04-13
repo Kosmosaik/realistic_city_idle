@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Check Drying Rack"
+description = "Inspect a drying batch and finish it into a safer preserved state when ready."
+sort_index = 300
+tags = PackedStringArray("primitive_camp_process", "food", "preservation")
+process_def_id = "pro_check_drying_rack"
+input_item_def_ids = PackedStringArray("itm_food_meat_drying")
+output_item_def_ids = PackedStringArray("itm_food_meat_dried_simple")
+required_structure_def_ids = PackedStringArray("str_drying_rack_small")
+required_skill_ids = PackedStringArray("food_drying")
+required_zone_type_ids = PackedStringArray("zone_type_drying")
+task_def_id = "tsk_inspect_drying_food"
+duration_hours = 0.25
+is_interruptible = true

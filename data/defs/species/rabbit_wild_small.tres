@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SpeciesDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/species_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Small Wild Rabbit"
+description = "A small game species suitable for early opportunistic hunting placeholders."
+sort_index = 30
+tags = PackedStringArray("starter_species", "small_game")
+species_id = "rabbit_wild_small"
+species_kind = "animal"
+biome_tags = PackedStringArray("edge", "brush", "temperate")
+opportunity_tags = PackedStringArray("resource_opportunity.small_game_cover")
+associated_item_def_ids = PackedStringArray("itm_food_small_game_raw")

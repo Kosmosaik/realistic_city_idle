@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Scraped Wet Hide"
+description = "A fresh hide after rough scraping, still wet and unstable."
+sort_index = 360
+tags = PackedStringArray("hide", "intermediate")
+item_def_id = "itm_hide_scraped_wet"
+stack_limit = 2
+is_liquid = false
+function_tags = PackedStringArray("hide_work_input")
+storage_tags = PackedStringArray("covered")
+need_tags = PackedStringArray()

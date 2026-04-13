@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Stone Knapping"
+description = "Breaking stone intentionally to produce cutting flakes and usable cores."
+sort_index = 60
+tags = PackedStringArray("core_skill", "toolmaking")
+skill_id = "stone_knapping"
+category_tags = PackedStringArray("tools", "stone")
+is_hidden = false

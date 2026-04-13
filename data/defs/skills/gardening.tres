@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Gardening"
+description = "Preparing simple planted ground and tending a very small plot."
+sort_index = 140
+tags = PackedStringArray("core_skill", "garden")
+skill_id = "gardening"
+category_tags = PackedStringArray("garden", "planting")
+is_hidden = false

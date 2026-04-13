@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Scrape Small Hide"
+description = "Roughly scrape a fresh small hide to make it more usable later."
+sort_index = 350
+tags = PackedStringArray("primitive_camp_process", "hide_work")
+process_def_id = "pro_scrape_hide_small"
+input_item_def_ids = PackedStringArray("itm_hide_raw_small", "itm_stone_sharp_flake")
+output_item_def_ids = PackedStringArray("itm_hide_scraped_wet")
+required_structure_def_ids = PackedStringArray("str_workspot_butchery_groundsheet_none")
+required_skill_ids = PackedStringArray("hide_scraping")
+required_zone_type_ids = PackedStringArray("zone_type_dirty_processing")
+task_def_id = "tsk_make_container"
+duration_hours = 0.5
+is_interruptible = true

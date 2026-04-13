@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Store Water Clean Covered"
+description = "Move already safe water into a cleaner covered storage routine."
+sort_index = 260
+tags = PackedStringArray("primitive_camp_process", "water")
+process_def_id = "pro_store_water_clean_covered"
+input_item_def_ids = PackedStringArray("itm_water_boiled")
+output_item_def_ids = PackedStringArray("itm_water_boiled")
+required_structure_def_ids = PackedStringArray("str_water_storage_clean_area_simple")
+required_skill_ids = PackedStringArray("water_collection")
+required_zone_type_ids = PackedStringArray("zone_type_clean_water_storage")
+task_def_id = "tsk_refill_clean_water_store"
+duration_hours = 0.2
+is_interruptible = true

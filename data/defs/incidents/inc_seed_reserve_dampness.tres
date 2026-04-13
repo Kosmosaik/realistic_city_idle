@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="IncidentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/incident_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Seed Reserve Dampness"
+description = "Protected seed stock has become damp enough to threaten future planting value."
+sort_index = 40
+tags = PackedStringArray("starter_incident", "seed", "reserve")
+incident_id = "inc_seed_reserve_dampness"
+severity = "warning"
+primary_domain = "reserve"
+trigger_kind = "storage_failure"
+default_ui_panel_id = "reserve_alerts_panel"
+related_task_def_ids = PackedStringArray("tsk_protect_seed", "tsk_sort_storage")
+related_process_def_ids = PackedStringArray("pro_store_seed_protected", "pro_plant_seed_small_plot")
+related_structure_def_ids = PackedStringArray()
+related_item_def_ids = PackedStringArray("itm_seed_saved_mixed")
+is_player_notifiable = true

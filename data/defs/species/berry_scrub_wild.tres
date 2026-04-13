@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SpeciesDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/species_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Wild Berry Scrub"
+description = "Edge scrub that can plausibly support low-grade gathered calories."
+sort_index = 20
+tags = PackedStringArray("starter_species", "edge_food")
+species_id = "berry_scrub_wild"
+species_kind = "plant"
+biome_tags = PackedStringArray("edge", "temperate")
+opportunity_tags = PackedStringArray("resource_opportunity.berry_edge_patch")
+associated_item_def_ids = PackedStringArray("itm_food_gathered_mixed_lowgrade")

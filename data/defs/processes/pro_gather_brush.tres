@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Gather Brush"
+description = "Collect loose brush for bedding, windbreaks, and simple shelter fill."
+sort_index = 160
+tags = PackedStringArray("starter_process", "shelter")
+process_def_id = "pro_gather_brush"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray("itm_brush_bundle")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray()
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_build_shelter"
+duration_hours = 0.5
+is_interruptible = true

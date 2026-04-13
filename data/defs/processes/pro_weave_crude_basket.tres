@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Weave Crude Basket"
+description = "Turn flexible fibers and bindings into a rough but useful basket."
+sort_index = 340
+tags = PackedStringArray("primitive_camp_process", "container")
+process_def_id = "pro_weave_crude_basket"
+input_item_def_ids = PackedStringArray("itm_fiber_raw_mixed", "itm_cordage_crude_short")
+output_item_def_ids = PackedStringArray("itm_container_basket_crude")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("basketry", "cordage_making")
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_make_container"
+duration_hours = 0.75
+is_interruptible = true

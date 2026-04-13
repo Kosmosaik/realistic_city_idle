@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Shape Small Pot"
+description = "Hand-form a crude small clay vessel at a simple pottery workspot."
+sort_index = 380
+tags = PackedStringArray("primitive_camp_process", "pottery")
+process_def_id = "pro_shape_small_pot"
+input_item_def_ids = PackedStringArray("itm_clay_raw")
+output_item_def_ids = PackedStringArray("itm_pot_uncured_small")
+required_structure_def_ids = PackedStringArray("str_pottery_workspot_simple")
+required_skill_ids = PackedStringArray("pottery_handbuilding")
+required_zone_type_ids = PackedStringArray("zone_type_dirty_processing")
+task_def_id = "tsk_make_container"
+duration_hours = 0.75
+is_interruptible = true

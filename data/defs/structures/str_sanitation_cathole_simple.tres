@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/structure_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Simple Cathole"
+description = "A basic first sanitation point kept away from living areas."
+sort_index = 60
+tags = PackedStringArray("starter_structure", "sanitation")
+structure_def_id = "str_sanitation_cathole_simple"
+footprint_cells = Vector2i(1, 1)
+function_tags = PackedStringArray("func_sanitation")
+allowed_zone_type_ids = PackedStringArray("zone_type_latrine")
+storage_role = ""
+build_process_def_id = "pro_dig_cathole"

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Short Crude Cordage"
+description = "A short rough binding made from twisted wild fibers."
+sort_index = 350
+tags = PackedStringArray("fiber", "cordage")
+item_def_id = "itm_cordage_crude_short"
+stack_limit = 8
+is_liquid = false
+function_tags = PackedStringArray("binding", "container_making", "repair")
+storage_tags = PackedStringArray("dry", "covered")
+need_tags = PackedStringArray()

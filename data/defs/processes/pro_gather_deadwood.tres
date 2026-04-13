@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://dvbolh8fro76v"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_gather_deadwood"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray("itm_wood_twig_dry", "itm_wood_branch_dry_small")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("fuel_selection")
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_gather_fuel"
+duration_hours = 0.75
+display_name = "Gather Deadwood"
+description = "Collect dry twigs and small dry branches from nearby woody ground."
+sort_index = 100
+tags = PackedStringArray("starter_process", "fuel")

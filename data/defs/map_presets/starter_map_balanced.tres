@@ -1,15 +1,13 @@
-[gd_resource type="Resource" script_class="MapPresetDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="MapPresetDef" format=3 uid="uid://cvrr1o48aogys"]
 
-[ext_resource type="Script" path="res://scripts/core/defs/map_preset_def.gd" id="1"]
+[ext_resource type="Script" uid="uid://bepvo80pnj0y6" path="res://scripts/core/defs/map_preset_def.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+map_preset_id = "starter_map_balanced"
+fixture_id = "starter_map_balanced"
+point_of_interest_tags = PackedStringArray("water", "dry_ground", "wood", "stone")
 display_name = "Starter Map Balanced"
 description = "Balanced authored starter map fixture for the early MVP shell."
 sort_index = 10
 tags = PackedStringArray("starter", "authored_map")
-map_preset_id = "starter_map_balanced"
-fixture_id = "starter_map_balanced"
-world_width_cells = 64
-world_height_cells = 48
-point_of_interest_tags = PackedStringArray("water", "dry_ground", "wood", "stone")

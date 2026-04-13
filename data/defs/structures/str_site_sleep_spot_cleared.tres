@@ -5,12 +5,12 @@
 [resource]
 script = ExtResource("1")
 display_name = "Cleared Sleep Spot"
-description = "A minimally cleared and designated place to sleep."
+description = "A minimally cleared sleeping place with better ground than bare camp surface."
 sort_index = 10
 tags = PackedStringArray("starter_structure", "sleep")
-structure_def_id = "str_sleep_spot_cleared"
+structure_def_id = "str_site_sleep_spot_cleared"
 footprint_cells = Vector2i(2, 2)
 function_tags = PackedStringArray("func_sleep")
 allowed_zone_type_ids = PackedStringArray("zone_type_sleep_area")
 storage_role = ""
-build_process_def_id = ""
+build_process_def_id = "pro_clear_sleep_ground"

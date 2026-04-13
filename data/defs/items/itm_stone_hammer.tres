@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://ceyei21nlflw4"]
+
+[ext_resource type="Script" uid="uid://mp1tk61itpec" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_def_id = "itm_stone_hammer"
+function_tags = PackedStringArray("tool", "hammering")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()
+display_name = "Hammer Stone"
+description = "A selected pounding stone useful for cracking and breaking."
+sort_index = 100
+tags = PackedStringArray("stone", "tool")

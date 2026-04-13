@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1")
-display_name = "Water Handling"
-description = "Basic collection, carrying, and treatment of camp water."
+display_name = "Water Collection"
+description = "Finding, collecting, and carrying usable water from nearby sources."
 sort_index = 20
-tags = PackedStringArray("early_skill")
-skill_id = "water_handling"
+tags = PackedStringArray("core_skill", "water")
+skill_id = "water_collection"
 category_tags = PackedStringArray("water", "survival")
 is_hidden = false

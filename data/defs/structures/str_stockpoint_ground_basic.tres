@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/structure_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Basic Ground Stockpoint"
+description = "A marked general-purpose ground stockpoint for intentional local storage."
+sort_index = 150
+tags = PackedStringArray("primitive_camp_structure", "stockpoint")
+structure_def_id = "str_stockpoint_ground_basic"
+footprint_cells = Vector2i(2, 2)
+function_tags = PackedStringArray("func_storage", "func_stockpoint")
+allowed_zone_type_ids = PackedStringArray("zone_type_outer_cache")
+storage_role = ""
+build_process_def_id = ""

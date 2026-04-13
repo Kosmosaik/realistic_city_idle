@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Mixed Small Bones"
+description = "Small bones with later toolmaking potential."
+sort_index = 230
+tags = PackedStringArray("bone", "byproduct")
+item_def_id = "itm_bone_small_mixed"
+stack_limit = 10
+is_liquid = false
+function_tags = PackedStringArray("bone_input")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Unfired Small Pot"
+description = "A fragile green clay pot that must dry and fire successfully to become useful."
+sort_index = 380
+tags = PackedStringArray("pottery", "greenware")
+item_def_id = "itm_pot_uncured_small"
+stack_limit = 2
+is_liquid = false
+function_tags = PackedStringArray("greenware", "pottery_input")
+storage_tags = PackedStringArray("covered")
+need_tags = PackedStringArray()

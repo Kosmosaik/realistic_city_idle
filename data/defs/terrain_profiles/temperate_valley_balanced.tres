@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="TerrainProfileDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/terrain_profile_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Temperate Valley Balanced"
+description = "Starter terrain profile with survivable but non-trivial tradeoffs."
+sort_index = 10
+tags = PackedStringArray("starter_terrain", "balanced")
+terrain_profile_id = "temperate_valley_balanced"
+landform_type = "bench"
+slope_class = "gentle"
+drainage_class = "moderate"
+vegetation_cover_class = "woodland"
+water_source_types = PackedStringArray("stream", "spring")
+suitability_tags = PackedStringArray("starter_balanced", "survival_viable")

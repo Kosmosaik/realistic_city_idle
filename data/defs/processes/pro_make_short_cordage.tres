@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Make Short Cordage"
+description = "Twist gathered fibers into short crude bindings."
+sort_index = 330
+tags = PackedStringArray("primitive_camp_process", "fiber")
+process_def_id = "pro_make_short_cordage"
+input_item_def_ids = PackedStringArray("itm_fiber_raw_mixed")
+output_item_def_ids = PackedStringArray("itm_cordage_crude_short")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("cordage_making")
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_make_container"
+duration_hours = 0.4
+is_interruptible = true

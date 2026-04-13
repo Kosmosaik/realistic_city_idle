@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Cordage Making"
+description = "Twisting raw fibers into short useful bindings and ties."
+sort_index = 120
+tags = PackedStringArray("core_skill", "fiber")
+skill_id = "cordage_making"
+category_tags = PackedStringArray("fiber", "containers")
+is_hidden = false

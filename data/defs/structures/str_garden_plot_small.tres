@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/structure_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Small Garden Plot"
+description = "A first prepared plot for near-camp planting and tending."
+sort_index = 160
+tags = PackedStringArray("primitive_camp_structure", "garden")
+structure_def_id = "str_garden_plot_small"
+footprint_cells = Vector2i(3, 3)
+function_tags = PackedStringArray("func_garden")
+allowed_zone_type_ids = PackedStringArray("zone_type_garden")
+storage_role = ""
+build_process_def_id = "pro_prepare_garden_plot"

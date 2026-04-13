@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://bu80vjsh00gpp"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_pick_stone_useful"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray("itm_stone_hammer", "itm_stone_core")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("primitive_toolmaking")
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_make_tool"
+duration_hours = 0.5
+display_name = "Pick Useful Stone"
+description = "Select workable stones suitable for pounding or later flake production."
+sort_index = 110
+tags = PackedStringArray("starter_process", "toolmaking")

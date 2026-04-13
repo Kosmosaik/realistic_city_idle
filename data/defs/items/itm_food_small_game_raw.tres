@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://cs5as4tgorsit"]
+
+[ext_resource type="Script" uid="uid://mp1tk61itpec" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_def_id = "itm_food_small_game_raw"
+stack_limit = 2
+function_tags = PackedStringArray("butchery_input")
+storage_tags = PackedStringArray("dirty")
+need_tags = PackedStringArray()
+display_name = "Raw Small Game"
+description = "An unprocessed small-game carcass that must be handled quickly."
+sort_index = 190
+tags = PackedStringArray("food", "carcass", "raw")

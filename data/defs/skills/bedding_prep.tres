@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Bedding Prep"
+description = "Clearing and preparing drier, more insulated sleeping ground."
+sort_index = 80
+tags = PackedStringArray("core_skill", "sleep")
+skill_id = "bedding_prep"
+category_tags = PackedStringArray("sleep", "shelter")
+is_hidden = false

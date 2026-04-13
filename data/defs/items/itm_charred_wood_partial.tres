@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Partially Charred Wood"
+description = "A usable remnant from previous fire use that may help with relighting."
+sort_index = 270
+tags = PackedStringArray("fuel", "fire")
+item_def_id = "itm_charred_wood_partial"
+stack_limit = 8
+is_liquid = false
+function_tags = PackedStringArray("fuel", "ember_support")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UiPanelDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/ui_panel_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Camp Summary Panel"
+description = "Static metadata for the high-level camp summary panel."
+sort_index = 10
+tags = PackedStringArray("starter_ui_panel", "summary")
+ui_panel_id = "camp_summary_panel"
+panel_group = "summary"
+supported_alert_domains = PackedStringArray("water", "food", "fire", "storage", "reserve", "sanitation")
+default_visible = true
+starts_collapsed = false
+is_debug_only = false

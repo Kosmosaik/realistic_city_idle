@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SpeciesDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/species_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Alluvial Clay Bank"
+description = "A fine wet-soil clay opportunity suitable for simple handbuilt pottery."
+sort_index = 40
+tags = PackedStringArray("starter_species", "clay")
+species_id = "clay_bank_alluvial"
+species_kind = "resource"
+biome_tags = PackedStringArray("wet_margin", "fine_soil")
+opportunity_tags = PackedStringArray("resource_opportunity.clay_near_wet_fine_soil")
+associated_item_def_ids = PackedStringArray("itm_clay_raw")

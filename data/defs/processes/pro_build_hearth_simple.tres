@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Build Hearth"
+description = "Arrange stones and fire-safe ground into a simple repeatable hearth."
+sort_index = 320
+tags = PackedStringArray("primitive_camp_process", "fire")
+process_def_id = "pro_build_hearth_simple"
+input_item_def_ids = PackedStringArray("itm_stone_fractured_chunk", "itm_wood_branch_dry_small")
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("primitive_toolmaking", "hearth_tending")
+required_zone_type_ids = PackedStringArray("zone_type_hearth")
+task_def_id = "tsk_maintain_fire"
+duration_hours = 1.0
+is_interruptible = false

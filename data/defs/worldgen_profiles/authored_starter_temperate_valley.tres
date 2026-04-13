@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WorldgenProfileDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/worldgen_profile_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Authored Starter Temperate Valley"
+description = "Starter world/profile bundle for authored-map bootstrap work."
+sort_index = 10
+tags = PackedStringArray("starter_worldgen", "authored")
+worldgen_profile_id = "authored_starter_temperate_valley"
+map_preset_ids = PackedStringArray("starter_map_balanced")
+terrain_profile_ids = PackedStringArray("temperate_valley_balanced")
+season_profile_id = "temperate_four_season_basic"
+starter_species_ids = PackedStringArray("common_reeds", "berry_scrub_wild", "rabbit_wild_small", "clay_bank_alluvial")
+authored_only = true

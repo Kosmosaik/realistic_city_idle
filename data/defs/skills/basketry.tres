@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Basketry"
+description = "Simple container making from flexible plant material."
+sort_index = 110
+tags = PackedStringArray("core_skill", "container")
+skill_id = "basketry"
+category_tags = PackedStringArray("containers", "fiber")
+is_hidden = false

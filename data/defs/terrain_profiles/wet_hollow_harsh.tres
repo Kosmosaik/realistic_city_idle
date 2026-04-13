@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="TerrainProfileDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/terrain_profile_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Wet Hollow Harsh"
+description = "A harsher low-lying terrain profile with more wetness and sanitation pressure."
+sort_index = 20
+tags = PackedStringArray("starter_terrain", "harsh")
+terrain_profile_id = "wet_hollow_harsh"
+landform_type = "depression"
+slope_class = "gentle"
+drainage_class = "poor"
+vegetation_cover_class = "wetland"
+water_source_types = PackedStringArray("stream", "seep")
+suitability_tags = PackedStringArray("harsh", "wet_risk")

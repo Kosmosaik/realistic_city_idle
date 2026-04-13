@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Fire Small Pottery Batch"
+description = "Use the hearth to harden a very small batch of crude pottery."
+sort_index = 390
+tags = PackedStringArray("primitive_camp_process", "pottery")
+process_def_id = "pro_fire_small_pottery_batch"
+input_item_def_ids = PackedStringArray("itm_pot_uncured_small", "itm_fuelwood_bundle_mixed")
+output_item_def_ids = PackedStringArray("itm_pot_fired_small")
+required_structure_def_ids = PackedStringArray("str_pottery_workspot_simple", "str_fire_hearth_stone_small")
+required_skill_ids = PackedStringArray("pottery_handbuilding", "hearth_tending")
+required_zone_type_ids = PackedStringArray("zone_type_hearth")
+task_def_id = "tsk_make_container"
+duration_hours = 1.5
+is_interruptible = false

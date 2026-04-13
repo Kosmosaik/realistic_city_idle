@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Pottery Handbuilding"
+description = "Simple hand-shaped clay forming for small crude pots."
+sort_index = 150
+tags = PackedStringArray("core_skill", "pottery")
+skill_id = "pottery_handbuilding"
+category_tags = PackedStringArray("pottery", "containers")
+is_hidden = false

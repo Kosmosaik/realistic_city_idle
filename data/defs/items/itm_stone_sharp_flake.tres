@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Sharp Stone Flake"
+description = "A crude cutting edge produced from simple stone breakage."
+sort_index = 110
+tags = PackedStringArray("stone", "tool")
+item_def_id = "itm_stone_sharp_flake"
+stack_limit = 4
+is_liquid = false
+function_tags = PackedStringArray("tool", "cutting", "scraping")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()

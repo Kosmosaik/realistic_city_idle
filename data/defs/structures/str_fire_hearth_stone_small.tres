@@ -1,16 +1,15 @@
-[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="StructureDef" format=3 uid="uid://bkjy8bp1pvctf"]
 
-[ext_resource type="Script" path="res://scripts/core/defs/structure_def.gd" id="1"]
+[ext_resource type="Script" uid="uid://bhjoukl5lnmlw" path="res://scripts/core/defs/structure_def.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
-display_name = "Small Stone Hearth"
-description = "A small contained hearth for safe repeated fire use."
-sort_index = 20
-tags = PackedStringArray("starter_structure", "fire")
 structure_def_id = "str_fire_hearth_stone_small"
 footprint_cells = Vector2i(2, 2)
 function_tags = PackedStringArray("func_fire")
 allowed_zone_type_ids = PackedStringArray("zone_type_hearth")
-storage_role = ""
-build_process_def_id = ""
+build_process_def_id = "pro_build_hearth_simple"
+display_name = "Small Stone Hearth"
+description = "A small contained hearth for safe repeated fire use."
+sort_index = 20
+tags = PackedStringArray("starter_structure", "fire")

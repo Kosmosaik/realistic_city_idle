@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://bf6cpw7hehn57"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_build_debris_lean_to"
+input_item_def_ids = PackedStringArray("itm_wood_pole_crude", "itm_wood_branch_green_small", "itm_brush_bundle")
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("shelter_building")
+required_zone_type_ids = PackedStringArray("zone_type_sleep_area")
+task_def_id = "tsk_build_shelter"
+duration_hours = 2.0
+is_interruptible = false
+display_name = "Build Debris Lean-To"
+description = "Assemble a crude debris lean-to from rough poles, branches, and brush."
+sort_index = 140
+tags = PackedStringArray("starter_process", "shelter")

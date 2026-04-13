@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Saved Seed Mix"
+description = "A deliberately protected seed mix kept for later planting rather than eating."
+sort_index = 400
+tags = PackedStringArray("seed", "planting")
+item_def_id = "itm_seed_saved_mixed"
+stack_limit = 10
+is_liquid = false
+function_tags = PackedStringArray("planting_input", "protected_seed")
+storage_tags = PackedStringArray("dry", "seed_protected")
+need_tags = PackedStringArray()

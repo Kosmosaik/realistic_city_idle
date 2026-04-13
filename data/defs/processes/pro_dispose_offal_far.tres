@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dispose Offal Far"
+description = "Carry butchery waste away from camp so it does not foul the living area."
+sort_index = 240
+tags = PackedStringArray("starter_process", "sanitation")
+process_def_id = "pro_dispose_offal_far"
+input_item_def_ids = PackedStringArray("itm_offal_small")
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray()
+required_zone_type_ids = PackedStringArray("zone_type_waste")
+task_def_id = "tsk_improve_sanitation"
+duration_hours = 0.3
+is_interruptible = true

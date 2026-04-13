@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/structure_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Simple Branch Drying Line"
+description = "A rough branch line for hanging light materials to dry."
+sort_index = 80
+tags = PackedStringArray("starter_structure", "drying")
+structure_def_id = "str_drying_line_branch_simple"
+footprint_cells = Vector2i(3, 1)
+function_tags = PackedStringArray("func_drying")
+allowed_zone_type_ids = PackedStringArray("zone_type_drying")
+storage_role = ""
+build_process_def_id = ""

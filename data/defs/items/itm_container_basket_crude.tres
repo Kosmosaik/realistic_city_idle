@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Crude Basket"
+description = "A basic woven carrying and storage container."
+sort_index = 340
+tags = PackedStringArray("container", "basket")
+item_def_id = "itm_container_basket_crude"
+stack_limit = 1
+is_liquid = false
+function_tags = PackedStringArray("container", "hauling", "storage")
+storage_tags = PackedStringArray("dry", "covered")
+need_tags = PackedStringArray()

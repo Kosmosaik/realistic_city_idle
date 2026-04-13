@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1")
-display_name = "Boiled Safe Water"
-description = "Potable water produced from simple boiling."
+display_name = "Boiled Water"
+description = "Safer water produced through simple boiling."
 sort_index = 20
 tags = PackedStringArray("water", "liquid", "potable")
-item_def_id = "itm_water_boiled_safe"
+item_def_id = "itm_water_boiled"
 stack_limit = 50
 is_liquid = true
 function_tags = PackedStringArray("drink")

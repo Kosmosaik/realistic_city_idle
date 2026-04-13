@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Butcher Small Game"
+description = "Crude field butchery that produces meat and messy waste."
+sort_index = 200
+tags = PackedStringArray("starter_process", "food", "butchery")
+process_def_id = "pro_butcher_small_game_dirty"
+input_item_def_ids = PackedStringArray("itm_food_small_game_raw", "itm_stone_sharp_flake")
+output_item_def_ids = PackedStringArray("itm_food_meat_raw_small", "itm_hide_raw_small", "itm_bone_small_mixed", "itm_offal_small")
+required_structure_def_ids = PackedStringArray("str_workspot_butchery_groundsheet_none")
+required_skill_ids = PackedStringArray("stone_knapping")
+required_zone_type_ids = PackedStringArray("zone_type_dirty_processing")
+task_def_id = "tsk_get_food"
+duration_hours = 0.5
+is_interruptible = false

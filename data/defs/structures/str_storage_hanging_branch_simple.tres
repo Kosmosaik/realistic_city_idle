@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/structure_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Simple Hanging Branch Cache"
+description = "A basic hanging storage spot that lifts food or materials slightly off the ground."
+sort_index = 50
+tags = PackedStringArray("starter_structure", "storage")
+structure_def_id = "str_storage_hanging_branch_simple"
+footprint_cells = Vector2i(2, 1)
+function_tags = PackedStringArray("func_storage")
+allowed_zone_type_ids = PackedStringArray("zone_type_outer_cache")
+storage_role = ""
+build_process_def_id = ""

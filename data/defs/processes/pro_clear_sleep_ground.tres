@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://c62hjghx1v1u8"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_clear_sleep_ground"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("bedding_prep")
+required_zone_type_ids = PackedStringArray("zone_type_sleep_area")
+task_def_id = "tsk_prepare_sleep_site"
+duration_hours = 0.75
+display_name = "Clear Sleep Ground"
+description = "Clear and prepare a drier sleeping patch before bedding is improved further."
+sort_index = 130
+tags = PackedStringArray("starter_process", "sleep")

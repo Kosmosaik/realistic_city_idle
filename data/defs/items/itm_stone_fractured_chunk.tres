@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Fractured Stone Chunk"
+description = "A rough broken stone suitable for hearth edging and crude camp work."
+sort_index = 330
+tags = PackedStringArray("stone", "material")
+item_def_id = "itm_stone_fractured_chunk"
+stack_limit = 10
+is_liquid = false
+function_tags = PackedStringArray("hearth_stone", "construction")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()

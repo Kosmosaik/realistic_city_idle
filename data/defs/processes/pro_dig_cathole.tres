@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dig Cathole"
+description = "Prepare a simple first sanitation point away from the sleeping area."
+sort_index = 230
+tags = PackedStringArray("starter_process", "sanitation")
+process_def_id = "pro_dig_cathole"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray()
+required_zone_type_ids = PackedStringArray("zone_type_latrine")
+task_def_id = "tsk_improve_sanitation"
+duration_hours = 0.4
+is_interruptible = true

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Shelter Building"
+description = "Creating simple windbreaks and debris shelters from local materials."
+sort_index = 70
+tags = PackedStringArray("core_skill", "shelter")
+skill_id = "shelter_building"
+category_tags = PackedStringArray("shelter", "construction")
+is_hidden = false

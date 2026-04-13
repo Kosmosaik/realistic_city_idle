@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Mixed Fuelwood Bundle"
+description = "A sorted mixed bundle of small camp fuel for more reliable hearth use."
+sort_index = 260
+tags = PackedStringArray("fuel", "wood")
+item_def_id = "itm_fuelwood_bundle_mixed"
+stack_limit = 8
+is_liquid = false
+function_tags = PackedStringArray("fuel")
+storage_tags = PackedStringArray("dry", "covered")
+need_tags = PackedStringArray()

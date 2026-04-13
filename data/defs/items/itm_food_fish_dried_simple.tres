@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dried Fish"
+description = "Simple dried fish with better shelf life than fresh catch."
+sort_index = 310
+tags = PackedStringArray("food", "fish", "dried")
+item_def_id = "itm_food_fish_dried_simple"
+stack_limit = 6
+is_liquid = false
+function_tags = PackedStringArray("food", "preserved_food")
+storage_tags = PackedStringArray("dry", "covered")
+need_tags = PackedStringArray("need_calories")

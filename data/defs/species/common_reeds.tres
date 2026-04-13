@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SpeciesDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/species_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Common Reeds"
+description = "Flexible wet-margin reeds with early fiber and container potential."
+sort_index = 10
+tags = PackedStringArray("starter_species", "wet_margin")
+species_id = "common_reeds"
+species_kind = "plant"
+biome_tags = PackedStringArray("wet_margin", "temperate")
+opportunity_tags = PackedStringArray("resource_opportunity.reeds")
+associated_item_def_ids = PackedStringArray("itm_fiber_raw_mixed")

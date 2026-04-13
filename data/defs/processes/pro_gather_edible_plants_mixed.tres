@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Gather Edible Plants"
+description = "Gather low-grade edible plant matter from nearby ground and brush."
+sort_index = 180
+tags = PackedStringArray("starter_process", "food")
+process_def_id = "pro_gather_edible_plants_mixed"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray("itm_food_gathered_mixed_lowgrade")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("foraging")
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_get_food"
+duration_hours = 0.75
+is_interruptible = true

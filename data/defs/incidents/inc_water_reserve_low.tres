@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="IncidentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/incident_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Water Reserve Low"
+description = "A named low-reserve water risk that should become visible before outright failure."
+sort_index = 10
+tags = PackedStringArray("starter_incident", "water", "reserve")
+incident_id = "inc_water_reserve_low"
+severity = "warning"
+primary_domain = "water"
+trigger_kind = "state_threshold"
+default_ui_panel_id = "reserve_alerts_panel"
+related_task_def_ids = PackedStringArray("tsk_fetch_water", "tsk_refill_clean_water_store")
+related_process_def_ids = PackedStringArray("pro_collect_surface_water", "pro_boil_water_simple", "pro_store_water_clean_covered")
+related_structure_def_ids = PackedStringArray("str_water_storage_clean_area_simple")
+related_item_def_ids = PackedStringArray("itm_water_raw_clear", "itm_water_boiled")
+is_player_notifiable = true

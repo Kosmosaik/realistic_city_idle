@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Build Brush Windbreak"
+description = "Arrange brush into a simple barrier that reduces wind on the sleeping side."
+sort_index = 170
+tags = PackedStringArray("starter_process", "shelter")
+process_def_id = "pro_build_brush_windbreak"
+input_item_def_ids = PackedStringArray("itm_brush_bundle", "itm_wood_branch_green_small")
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray("shelter_building")
+required_zone_type_ids = PackedStringArray("zone_type_sleep_area")
+task_def_id = "tsk_build_shelter"
+duration_hours = 1.0
+is_interruptible = true

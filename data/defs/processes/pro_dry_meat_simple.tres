@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://cmm40mvy4mxky"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_dry_meat_simple"
+input_item_def_ids = PackedStringArray("itm_food_meat_raw_small")
+output_item_def_ids = PackedStringArray("itm_food_meat_drying")
+required_structure_def_ids = PackedStringArray("str_drying_rack_small")
+required_skill_ids = PackedStringArray("food_drying")
+required_zone_type_ids = PackedStringArray("zone_type_drying")
+task_def_id = "tsk_preserve_food"
+duration_hours = 0.5
+display_name = "Dry Meat Simple"
+description = "Start a basic air-drying batch of small meat on a simple rack."
+sort_index = 290
+tags = PackedStringArray("primitive_camp_process", "food", "preservation")

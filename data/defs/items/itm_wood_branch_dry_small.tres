@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Small Dry Branch"
+description = "Light dry wood useful for small fires and rough framework."
+sort_index = 140
+tags = PackedStringArray("wood", "fuel")
+item_def_id = "itm_wood_branch_dry_small"
+stack_limit = 12
+is_liquid = false
+function_tags = PackedStringArray("fuel", "framework")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()

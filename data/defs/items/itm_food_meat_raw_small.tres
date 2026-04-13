@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Raw Small Meat"
+description = "Fresh butchered meat from small game, highly perishable."
+sort_index = 200
+tags = PackedStringArray("food", "meat", "raw")
+item_def_id = "itm_food_meat_raw_small"
+stack_limit = 4
+is_liquid = false
+function_tags = PackedStringArray("food", "cook_input")
+storage_tags = PackedStringArray("dirty")
+need_tags = PackedStringArray("need_calories")

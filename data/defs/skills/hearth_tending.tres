@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3 uid="uid://bl8i7btnddt1a"]
+
+[ext_resource type="Script" uid="uid://lwtu7c2413od" path="res://scripts/core/defs/skill_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_id = "hearth_tending"
+category_tags = PackedStringArray("fire", "camp")
+display_name = "Hearth Tending"
+description = "Stabilizing, feeding, and improving a simple hearth for repeated use."
+sort_index = 100
+tags = PackedStringArray("core_skill", "fire")

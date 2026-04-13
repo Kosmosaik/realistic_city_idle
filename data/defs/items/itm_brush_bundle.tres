@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Brush Bundle"
+description = "Loose brush suitable for bedding, fill, and rough shelter covering."
+sort_index = 170
+tags = PackedStringArray("plant", "material")
+item_def_id = "itm_brush_bundle"
+stack_limit = 12
+is_liquid = false
+function_tags = PackedStringArray("bedding", "shelter_fill")
+storage_tags = PackedStringArray("covered")
+need_tags = PackedStringArray()

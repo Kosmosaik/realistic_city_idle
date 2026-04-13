@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Relocate Waste Zone"
+description = "Push waste handling farther from the sleeping and food core."
+sort_index = 270
+tags = PackedStringArray("primitive_camp_process", "sanitation")
+process_def_id = "pro_relocate_waste_zone"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray("str_sanitation_waste_pit_small")
+required_skill_ids = PackedStringArray()
+required_zone_type_ids = PackedStringArray("zone_type_waste")
+task_def_id = "tsk_improve_sanitation"
+duration_hours = 0.75
+is_interruptible = true

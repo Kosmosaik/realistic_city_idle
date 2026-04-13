@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Improve Hearth Ring"
+description = "Tighten and improve the hearth ring for more stable repeated use."
+sort_index = 250
+tags = PackedStringArray("primitive_camp_process", "fire")
+process_def_id = "pro_improve_hearth_ring"
+input_item_def_ids = PackedStringArray("itm_stone_hammer")
+output_item_def_ids = PackedStringArray("itm_charred_wood_partial")
+required_structure_def_ids = PackedStringArray("str_fire_hearth_stone_small")
+required_skill_ids = PackedStringArray("hearth_tending")
+required_zone_type_ids = PackedStringArray("zone_type_hearth")
+task_def_id = "tsk_maintain_fire"
+duration_hours = 0.5
+is_interruptible = true

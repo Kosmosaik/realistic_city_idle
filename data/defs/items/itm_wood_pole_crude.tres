@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Crude Pole"
+description = "A rough pole used to support simple shelters and racks."
+sort_index = 160
+tags = PackedStringArray("wood", "material")
+item_def_id = "itm_wood_pole_crude"
+stack_limit = 6
+is_liquid = false
+function_tags = PackedStringArray("framework", "support")
+storage_tags = PackedStringArray("covered")
+need_tags = PackedStringArray()

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Scout Local Area"
+description = "Make a short nearby pass to identify water, safer ground, or useful materials."
+sort_index = 150
+tags = PackedStringArray("starter_process", "scouting")
+process_def_id = "pro_scout_local_area"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray()
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_scout_nearby_area"
+duration_hours = 0.75
+is_interruptible = true

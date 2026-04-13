@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dry Twig Bundle"
+description = "Fine dry fuel useful for easy ignition."
+sort_index = 130
+tags = PackedStringArray("wood", "fuel")
+item_def_id = "itm_wood_twig_dry"
+stack_limit = 20
+is_liquid = false
+function_tags = PackedStringArray("fuel", "tinder")
+storage_tags = PackedStringArray("dry")
+need_tags = PackedStringArray()

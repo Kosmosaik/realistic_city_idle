@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Roast Food"
+description = "Simple direct-fire roasting of small fresh meat."
+sort_index = 210
+tags = PackedStringArray("starter_process", "food", "cooking")
+process_def_id = "pro_roast_food_simple"
+input_item_def_ids = PackedStringArray("itm_food_meat_raw_small")
+output_item_def_ids = PackedStringArray("itm_food_meat_cooked")
+required_structure_def_ids = PackedStringArray("str_fire_hearth_stone_small")
+required_skill_ids = PackedStringArray("boiling")
+required_zone_type_ids = PackedStringArray("zone_type_hearth")
+task_def_id = "tsk_cook_food"
+duration_hours = 0.5
+is_interruptible = false

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UiPanelDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/ui_panel_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Incident Queue Panel"
+description = "Static metadata for the future incident/event list panel."
+sort_index = 40
+tags = PackedStringArray("starter_ui_panel", "alerts", "incident")
+ui_panel_id = "incident_queue_panel"
+panel_group = "alerts"
+supported_alert_domains = PackedStringArray("water", "food", "fire", "storage", "reserve", "sanitation", "health", "weather", "task_flow")
+default_visible = true
+starts_collapsed = false
+is_debug_only = false

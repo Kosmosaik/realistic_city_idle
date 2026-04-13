@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="IncidentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/incident_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Smoke Accumulation Warning"
+description = "A named smoke burden warning tied to poor hearth handling or camp layout."
+sort_index = 30
+tags = PackedStringArray("starter_incident", "fire", "health")
+incident_id = "inc_smoke_accumulation_warning"
+severity = "warning"
+primary_domain = "fire"
+trigger_kind = "process_failure"
+default_ui_panel_id = "incident_queue_panel"
+related_task_def_ids = PackedStringArray("tsk_maintain_fire", "tsk_cook_food")
+related_process_def_ids = PackedStringArray("pro_build_hearth_simple", "pro_improve_hearth_ring", "pro_roast_food_simple")
+related_structure_def_ids = PackedStringArray("str_fire_hearth_stone_small")
+related_item_def_ids = PackedStringArray("itm_fuelwood_bundle_mixed", "itm_charred_wood_partial")
+is_player_notifiable = true

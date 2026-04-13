@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://l400u74gt2jw"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_build_brush_bedding"
+input_item_def_ids = PackedStringArray("itm_brush_bundle")
+output_item_def_ids = PackedStringArray("itm_bedding_brush_pile")
+required_structure_def_ids = PackedStringArray("str_site_sleep_spot_cleared")
+required_skill_ids = PackedStringArray("bedding_prep")
+required_zone_type_ids = PackedStringArray("zone_type_sleep_area")
+task_def_id = "tsk_prepare_sleep_site"
+duration_hours = 0.5
+display_name = "Build Brush Bedding"
+description = "Pile and arrange brush into a simple sleeping layer above bare ground."
+sort_index = 220
+tags = PackedStringArray("starter_process", "sleep")

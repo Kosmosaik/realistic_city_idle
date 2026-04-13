@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Mixed Gathered Food"
+description = "Low-certainty mixed gathered calories from nearby plants and small finds."
+sort_index = 180
+tags = PackedStringArray("food", "gathered")
+item_def_id = "itm_food_gathered_mixed_lowgrade"
+stack_limit = 10
+is_liquid = false
+function_tags = PackedStringArray("food")
+storage_tags = PackedStringArray("covered")
+need_tags = PackedStringArray("need_calories")

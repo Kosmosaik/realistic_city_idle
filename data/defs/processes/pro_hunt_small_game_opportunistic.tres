@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProcessDef" format=3 uid="uid://bdmpjb21yce0p"]
+
+[ext_resource type="Script" uid="uid://mrknmmijxslm" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+process_def_id = "pro_hunt_small_game_opportunistic"
+input_item_def_ids = PackedStringArray()
+output_item_def_ids = PackedStringArray("itm_food_small_game_raw")
+required_structure_def_ids = PackedStringArray()
+required_skill_ids = PackedStringArray()
+required_zone_type_ids = PackedStringArray()
+task_def_id = "tsk_get_food"
+duration_hours = 1.25
+display_name = "Hunt Small Game"
+description = "Take an opportunistic attempt at catching or striking small game nearby."
+sort_index = 190
+tags = PackedStringArray("starter_process", "food", "hunting")

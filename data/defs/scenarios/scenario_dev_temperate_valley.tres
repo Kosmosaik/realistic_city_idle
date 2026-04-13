@@ -1,16 +1,16 @@
-[gd_resource type="Resource" script_class="ScenarioDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="ScenarioDef" format=3 uid="uid://bnex4kgecm71"]
 
-[ext_resource type="Script" path="res://scripts/core/defs/scenario_def.gd" id="1"]
+[ext_resource type="Script" uid="uid://blhi1re3kovau" path="res://scripts/core/defs/scenario_def.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+scenario_id = "scenario.dev.temperate_valley"
+starting_stage_id = "stage.lone_survivor"
+default_map_preset_id = "starter_map_balanced"
+worldgen_profile_id = "authored_starter_temperate_valley"
+starting_item_def_ids = PackedStringArray("itm_water_raw_clear", "itm_water_boiled")
+policy_bundle_ids = PackedStringArray("pol_bundle_starter_survival")
 display_name = "Dev Temperate Valley"
 description = "Default dev bootstrap scenario for the early playable shell."
 sort_index = 10
 tags = PackedStringArray("dev", "default_scenario")
-scenario_id = "scenario.dev.temperate_valley"
-starting_stage_id = "stage.lone_survivor"
-default_map_preset_id = "starter_map_balanced"
-default_seed = 100001
-starting_item_def_ids = PackedStringArray("itm_water_raw_clear", "itm_water_boiled_safe")
-policy_bundle_ids = PackedStringArray("pol_bundle_starter_survival")

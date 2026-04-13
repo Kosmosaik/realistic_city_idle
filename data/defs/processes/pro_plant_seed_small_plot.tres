@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProcessDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/process_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Plant Seed Small Plot"
+description = "Plant a first small saved seed mix into a prepared garden plot."
+sort_index = 370
+tags = PackedStringArray("primitive_camp_process", "garden")
+process_def_id = "pro_plant_seed_small_plot"
+input_item_def_ids = PackedStringArray("itm_seed_saved_mixed")
+output_item_def_ids = PackedStringArray()
+required_structure_def_ids = PackedStringArray("str_garden_plot_small")
+required_skill_ids = PackedStringArray("gardening")
+required_zone_type_ids = PackedStringArray("zone_type_garden")
+task_def_id = "tsk_tend_garden"
+duration_hours = 0.5
+is_interruptible = true

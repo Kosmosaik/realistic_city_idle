@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defs/item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Small Offal Waste"
+description = "Butchery waste that should be moved away from camp quickly."
+sort_index = 240
+tags = PackedStringArray("waste", "butchery")
+item_def_id = "itm_offal_small"
+stack_limit = 3
+is_liquid = false
+function_tags = PackedStringArray("waste")
+storage_tags = PackedStringArray("waste")
+need_tags = PackedStringArray()
