@@ -22,6 +22,7 @@ EventBus="*uid://c7ahpsjvpcv7n"
 TelemetryService="*uid://i7fesex41jkb"
 SaveService="*uid://dfqtt2xymi1ed"
 TimeService="*uid://cu3kl7b4mfymy"
+DefinitionRegistry="*uid://dts11exhor8lq"
 SimRoot="*uid://ct1x1ngyik8lg"
 AppRoot="*uid://b4wy1w22gscwq"
 

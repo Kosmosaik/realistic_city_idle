@@ -1,5 +1,7 @@
 # Realistic Idle City — Godot Bootstrap / First Sprint Implementation Plan v0.2
 
+> Filename retained for replacement convenience. Content now reflects the project **after Branch 02**, while keeping the same Sprint 1 branch shape.
+
 ## Purpose
 
 This document is the **full-scope-verified** version of the first sprint plan.
@@ -31,11 +33,17 @@ The goal is to make sure Sprint 1 still makes sense when the **whole project** i
 
 ## 1. Verification result
 
-### 1.1 Short answer
+### 1.1 Current status answer
 
 Yes — the original Sprint 1 shape is still the correct shape.
 
-It is still right to begin with:
+Current branch status:
+- **Branch 00 — repo bootstrap: complete**
+- **Branch 01 — core definitions and IDs: complete enough to close**
+- **Branch 02 — simulation clock and run loop: complete enough to close**
+- **Next active branch: Branch 03 — world data model + hand-authored maps**
+
+It was right to begin with:
 - project/bootstrap
 - definitions and vocabulary
 - deterministic time backbone
@@ -51,27 +59,28 @@ and **not** begin with:
 - procedural continent generation
 - polished UI
 
-### 1.2 What changed after full-scope review
+### 1.2 What Branch 02 now proves
 
-The branch order remains correct, but Sprint 1 needs a few additional constraints so it does not accidentally drift away from the older design docs.
+The branch order remains correct, and Branch 02 successfully established the runtime backbone that Sprint 1 needed before authoritative world data.
 
-The main additions are:
-1. **Calendar compatibility must exist in Sprint 1**
-   - day / part-of-day / season fields must exist now, even if weather gameplay comes later.
-2. **Scenario + seed determinism must exist in Sprint 1**
-   - startup scenario identity and RNG seed must be first-class debug-visible values.
-3. **Starter-area guarantees must shape the first authored maps**
-   - the maps cannot be arbitrary pretty terrain; they must support the early site-choice doctrine.
-4. **Zone and policy vocabulary must exist now as definitions/schema, even before full gameplay use**
-   - because many early systems depend on water area / sleep area / waste area / stockpoint ideas.
-5. **Minimal content IDs must align more closely to the canonical early content pack**
-   - especially scout, water, shelter, fire, food, storage, waste, and basic structures.
-6. **Fog of war must include remembered vs unknown distinction in data**, even if the visible implementation stays simple.
-7. **Stage progression must remain computed-from-conditions later**, so Sprint 1 should create the data hooks that make that possible.
+Implemented Branch 02 proof points:
+1. **Calendar compatibility exists in runtime now**
+   - tick / day / part-of-day / season / year placeholder all exist in the authoritative clock service.
+2. **Scenario + seed determinism is visible now**
+   - startup scenario identity, seed, run-loop events, and a rolling determinism signature are debug-visible.
+3. **Stable phase order exists now**
+   - the run loop executes a fixed ordered phase chain each tick.
+4. **Safe external subscription exists now**
+   - external systems can register phase listeners without owning the clock.
+5. **Deferred work boundaries exist now**
+   - scheduled triggers and queued commands already prove next-tick sequencing behavior.
+6. **Branch 03 can stay narrow now**
+   - world data can be introduced on top of a real deterministic clock rather than inside ad hoc scene code.
 
 So:
-- the original plan was **mostly right**
-- but this v0.2 is **better aligned with the full stack**
+- the original plan was **right**
+- Branch 02 now meaningfully completes the deterministic time/backbone slice
+- the next implementation focus should move cleanly to **authoritative world data and authored maps**
 
 ---
 
@@ -248,6 +257,9 @@ If those are wrong, later NPC, logistics, survival, storage, stage, and policy s
 
 ## 7. Branch 00 — repo bootstrap
 
+### Status
+**Complete**
+
 ### Goal
 Create a clean Godot project shell and prove a stable boot path into a dev world scene.
 
@@ -281,6 +293,9 @@ Create a clean Godot project shell and prove a stable boot path into a dev world
 ---
 
 ## 8. Branch 01 — core definitions and IDs
+
+### Status
+**Complete enough to close**
 
 ### Goal
 Create the canonical definition layer and shared project vocabulary in code.
@@ -385,6 +400,9 @@ These should align more closely to the canonical early content pack.
 
 ## 9. Branch 02 — simulation clock and run loop
 
+### Status
+**Complete enough to close**
+
 ### Goal
 Stand up the deterministic simulation backbone.
 
@@ -397,6 +415,23 @@ Stand up the deterministic simulation backbone.
 - deterministic seed usage hook
 - day / part-of-day / season exposure
 
+### Actual result summary
+Implemented Branch 02 backbone now includes:
+- authoritative deterministic tick progression in `TimeService`
+- pause / resume control
+- speed controls
+- single-step debug
+- stable phase order
+- calendar state exposure for tick/day/part-of-day/season/year placeholder
+- deterministic seed refresh and debug-visible determinism signature
+- phase listener registration/unregistration for external systems
+- queued-command queue and processing
+- scheduled-trigger queue and resolution
+- latched debug visibility for active/recent phases
+- per-phase duration tracking
+- debug queue previews for triggers and commands
+- external scheduled-trigger probe proving next-tick command behavior
+
 ### Required first-pass time state
 - absolute tick
 - day index
@@ -405,7 +440,7 @@ Stand up the deterministic simulation backbone.
 - current year placeholder
 - scenario seed and active RNG stream handle
 
-### Recommended phase order
+### Implemented phase order
 1. input / command intake
 2. time-step start
 3. world/system pre-update
@@ -415,9 +450,9 @@ Stand up the deterministic simulation backbone.
 7. end-of-tick bookkeeping
 
 ### Full-scope compatibility additions
-- keep a stable **pre-save / post-save-safe boundary** in mind even if save is stubbed
-- expose time in a way later docs can map onto daylight, weather pressure, labor capacity, and seasonal deadlines
-- expose deterministic run metadata to telemetry/debug
+- a stable phase boundary exists for future save/debug work even though save integration is still stubbed
+- time is exposed in a way later docs can map onto daylight, weather pressure, labor capacity, and seasonal deadlines
+- deterministic run metadata is exposed to telemetry/debug
 
 ### Exit criteria
 - same seed + same startup scenario yields stable tick ordering
@@ -429,10 +464,15 @@ Stand up the deterministic simulation backbone.
 - full weather
 - full daily AI planning
 - full survival decay
+- authoritative world cells
+- authored-map loading
 
 ---
 
 ## 10. Branch 03 — world data model + hand-authored maps
+
+### Status
+**Next active branch**
 
 ### Goal
 Implement the first authoritative world model and load authored starter maps.
@@ -498,6 +538,9 @@ A starter exploration zone should include:
 
 ## 11. Branch 04 — map renderer + camera + fog
 
+### Status
+Not started
+
 ### Goal
 Render the world clearly and prove the first interaction model for reading terrain.
 
@@ -518,222 +561,3 @@ At minimum the data model should support:
 - currently visible
 
 The visible presentation may simplify this at first, but the underlying state distinction should already exist.
-
-### Required overlays for Sprint 1
-- elevation / landform
-- drainage / wetness
-- buildability
-- water-source / water-access helper overlay if useful
-- fog state
-
-### Strongly recommended overlays
-- site suitability / campsite score debug overlay
-- zone stamp overlay placeholder
-- path cost / traversability debug overlay
-
-### Full-scope compatibility additions
-- the map must remain the main anchor, with minimal chrome
-- overlay/panel UI should stay dense and dev-oriented rather than card-heavy
-- reveal behavior should be compatible with later NPC exploration and memory systems
-
-### Exit criteria
-- the map is readable across multiple zoom levels
-- fog hides unknown land and preserves remembered land
-- reveal source uncovers nearby cells correctly
-- overlays visibly reflect underlying simulation data
-
-### Must not include
-- polished art pass
-- final contour polish
-- final scouting gameplay
-
----
-
-## 12. Minimal autoload/service set for Sprint 1
-
-Keep autoloads small.
-
-### Required
-- `AppRoot`
-- `SimRoot`
-- `TimeService`
-- `EventBus`
-- `DefinitionRegistry`
-- `TelemetryService`
-- `SaveService` (stub is fine)
-- optional `SeedService` if not folded into `SimRoot`
-
-### Must not become autoloads yet
-- world renderer
-- camera controller
-- HUD controller
-- map overlay controller
-- NPC manager with gameplay logic
-- task manager with gameplay logic
-
----
-
-## 13. Sprint 1 scene and script checklist
-
-### Autoloads
-- `autoload/app_root.gd`
-- `autoload/sim_root.gd`
-- `autoload/time_service.gd`
-- `autoload/event_bus.gd`
-- `autoload/definition_registry.gd`
-- `autoload/telemetry_service.gd`
-- `autoload/save_service.gd`
-- optional `autoload/seed_service.gd`
-
-### Boot
-- `boot/boot_scene.tscn`
-- `boot/boot_controller.gd`
-- `boot/scenario_bootstrapper.gd`
-
-### World
-- `world/scenes/world_root.tscn`
-- `world/scenes/test_world_scene.tscn`
-- `world/scripts/world_root_controller.gd`
-- `world/scripts/world_state.gd`
-- `world/scripts/world_cell_state.gd`
-- `world/scripts/world_loader.gd`
-- `world/scripts/world_renderer.gd`
-- `world/scripts/fog_layer_controller.gd`
-- `world/scripts/world_overlay_controller.gd`
-- `world/scripts/dev_observer_reveal_source.gd`
-- optional `world/scripts/site_debug_controller.gd`
-
-### Runtime/shared
-- `runtime/state/id_rules.gd`
-- `runtime/state/shared_enums.gd`
-- `runtime/state/definition_types.gd`
-- `runtime/state/sim_seed_state.gd`
-- `runtime/state/zone_types.gd` or equivalent enum/resource
-
-### UI/debug
-- `ui/scenes/dev_hud.tscn`
-- `ui/debug/dev_hud_controller.gd`
-- `ui/debug/cell_inspector_panel.gd`
-- `ui/debug/overlay_toggle_panel.gd`
-- optional `ui/debug/site_score_panel.gd`
-
-### Fixtures
-- `tests/fixtures/starter_map_balanced.*`
-- `tests/fixtures/starter_map_wet_annoying.*`
-- optional `tests/fixtures/starter_map_rocky_spring.*`
-- `tests/scenario_configs/dev_start_default.*`
-
----
-
-## 14. Developer UX requirements
-
-By the end of Sprint 1, the project should already be pleasant enough to debug.
-
-### Required
-- startup validation log
-- clear fatal errors for missing definitions
-- visible seed / scenario / tick / day / season
-- pause / resume / single-step
-- overlay toggles
-- cell hover inspector
-- dev reload current scenario
-- map reset / reload
-
-### Strongly recommended
-- reveal-all fog toggle
-- overlay cycle hotkey
-- recenter camera hotkey
-- site suitability overlay toggle
-
----
-
-## 15. First-sprint acceptance criteria
-
-Sprint 1 is done only if all of these are true:
-
-### Boot / repo
-- project opens and runs cleanly
-- startup order is understandable
-- seed and scenario are visible
-
-### Definitions
-- minimal definition pack loads from assets
-- malformed IDs fail loudly
-- duplicate IDs are detected
-- zone / fog / terrain / placeholder policy vocabulary exists
-
-### Time
-- time runs, pauses, and steps
-- tick order is deterministic
-- day / part-of-day / season are visible and stable
-
-### World
-- at least one authored map loads into authoritative state
-- the map expresses actual survival-relevant terrain trade-offs
-- POI placeholders and site-quality data can be inspected
-
-### Rendering / fog
-- map is readable and zoomable
-- fog hides unknown land
-- revealed land is remembered separately from unknown land
-- overlays reflect world truth
-
-### Debuggability
-- cell inspector works
-- startup validation is visible
-- seed / scenario / tick / season info is always visible in dev mode
-
-If any of these are false, Sprint 1 is not done.
-
----
-
-## 16. Risks to avoid
-
-### Risk A — building gameplay too early
-Do not drift into hunger/crafting/hauling simulation during Sprint 1.
-
-### Risk B — underbuilding time
-Do not implement only a raw tick counter and promise to fix calendar later.
-
-### Risk C — underbuilding map doctrine
-Do not use pretty-but-meaningless test maps.
-
-### Risk D — vocabulary drift
-Do not invent loose item/process/zone names that diverge from the canonical early content pack and shared dictionary.
-
-### Risk E — scene truth replacing simulation truth
-The renderer is not the world model.
-
-### Risk F — global sprawl
-Do not turn every system into an autoload.
-
----
-
-## 17. What happens after Sprint 1
-
-If Sprint 1 lands cleanly, proceed to:
-- Branch 05 — NPC core body-state
-- Branch 06 — item runtime / storage foundations
-- Branch 07 — task system v1
-- Branch 08 — pathfinding / movement / hauling
-- Branch 09 — water / fire / sleep / food core
-
-Sprint 1 is successful if it makes those branches easier and safer.
-
----
-
-## 18. Final stance
-
-After reviewing the full document universe, the correct first sprint is still:
-
-- make the codebase real
-- make the data vocabulary real
-- make the time backbone real
-- make the map real
-- make the overlays and fog real
-- make the project inspectable
-
-The only important correction is that Sprint 1 should not be grounded **only** in the newer implementation docs.
-It should also remain explicitly compatible with the older early-game, content-pack, calendar, site-generation, policy, logistics, settlement, UI, and NPC docs.
-
-That is what this v0.2 plan is for.

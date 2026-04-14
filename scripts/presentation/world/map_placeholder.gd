@@ -16,7 +16,7 @@ const COLOR_SITE: Color = Color8(201, 182, 129)
 const COLOR_GRID: Color = Color(1.0, 1.0, 1.0, 0.05)
 const COLOR_BORDER: Color = Color(0.0, 0.0, 0.0, 0.45)
 
-const TREE_COUNT: int = 24
+const TREE_COUNT: int = 50
 const TREE_ATTEMPT_LIMIT: int = 400
 const TREE_MARGIN: float = 24.0
 const TREE_SPACING_BUFFER: float = 10.0
@@ -132,18 +132,18 @@ func _draw_site_hint() -> void:
 		54.0,
 		Color(COLOR_SITE.r, COLOR_SITE.g, COLOR_SITE.b, 0.16)
 	)
-	draw_circle(SITE_CENTER, 18.0, COLOR_SITE)
+	draw_circle(SITE_CENTER, 12.0, COLOR_SITE)
 
 	draw_line(
-		SITE_CENTER + Vector2(-28.0, 0.0),
-		SITE_CENTER + Vector2(28.0, 0.0),
+		SITE_CENTER + Vector2(-20.0, 0.0),
+		SITE_CENTER + Vector2(20.0, 0.0),
 		COLOR_SITE,
 		3.0
 	)
 
 	draw_line(
-		SITE_CENTER + Vector2(0.0, -28.0),
-		SITE_CENTER + Vector2(0.0, 28.0),
+		SITE_CENTER + Vector2(0.0, -20.0),
+		SITE_CENTER + Vector2(0.0, 20.0),
 		COLOR_SITE,
 		3.0
 	)

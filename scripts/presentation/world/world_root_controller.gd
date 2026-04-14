@@ -3,15 +3,18 @@ class_name WorldRootController
 
 const MAP_PLACEHOLDER_SCRIPT: Script = preload("res://scripts/presentation/world/map_placeholder.gd")
 const DEV_HUD_SCRIPT: Script = preload("res://scripts/presentation/ui/dev_hud.gd")
+const DEBUG_SCHEDULED_TRIGGER_PROBE_SCRIPT: Script = preload("res://scripts/runtime/debug/debug_scheduled_trigger_probe.gd")
 
 const CAMERA_NAME: String = "WorldCamera"
 const MAP_NAME: String = "MapPlaceholder"
 const HUD_NAME: String = "DevHud"
+const DEBUG_SCHEDULED_TRIGGER_PROBE_NAME: String = "DebugScheduledTriggerProbe"
 
 func _ready() -> void:
 	_ensure_map_placeholder()
 	_ensure_camera()
 	_ensure_dev_hud()
+	_ensure_debug_scheduled_trigger_probe()
 
 	var sim_root: Node = _sim_root()
 	if sim_root != null and sim_root.has_method("register_world_root"):
@@ -45,7 +48,7 @@ func _ensure_camera() -> void:
 		camera = Camera2D.new()
 		camera.name = CAMERA_NAME
 		camera.position = Vector2(1024.0, 768.0)
-		camera.zoom = Vector2(0.44,0.44)
+		camera.zoom = Vector2(0.63, 0.63)
 		add_child(camera)
 
 	camera.make_current()
@@ -57,6 +60,14 @@ func _ensure_dev_hud() -> void:
 	var dev_hud: CanvasLayer = DEV_HUD_SCRIPT.new()
 	dev_hud.name = HUD_NAME
 	add_child(dev_hud)
+
+func _ensure_debug_scheduled_trigger_probe() -> void:
+	if get_node_or_null(DEBUG_SCHEDULED_TRIGGER_PROBE_NAME) != null:
+		return
+
+	var debug_probe: Node = DEBUG_SCHEDULED_TRIGGER_PROBE_SCRIPT.new()
+	debug_probe.name = DEBUG_SCHEDULED_TRIGGER_PROBE_NAME
+	add_child(debug_probe)
 
 func _get_scenario_id() -> String:
 	var sim_root: Node = _sim_root()

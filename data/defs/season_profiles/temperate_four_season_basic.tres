@@ -1,15 +1,14 @@
-[gd_resource type="Resource" script_class="SeasonProfileDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="SeasonProfileDef" format=3 uid="uid://3ih4hr6ugwhf"]
 
-[ext_resource type="Script" path="res://scripts/core/defs/season_profile_def.gd" id="1"]
+[ext_resource type="Script" uid="uid://c4ui41fnmrkav" path="res://scripts/core/defs/season_profile_def.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+season_profile_id = "temperate_four_season_basic"
+supported_season_ids = PackedStringArray("season.spring", "season.summer", "season.autumn", "season.winter")
+part_of_day_ids = PackedStringArray("part_of_day.dawn", "part_of_day.day", "part_of_day.dusk", "part_of_day.night")
+ticks_per_part_of_day = 720
 display_name = "Temperate Four Season Basic"
 description = "Simple four-season calendar profile for early authored-map compatibility."
 sort_index = 10
 tags = PackedStringArray("starter_calendar", "temperate")
-season_profile_id = "temperate_four_season_basic"
-supported_season_ids = PackedStringArray("season.spring", "season.summer", "season.autumn", "season.winter")
-default_start_season_id = "season.spring"
-part_of_day_ids = PackedStringArray("part_of_day.dawn", "part_of_day.day", "part_of_day.dusk", "part_of_day.night")
-ticks_per_part_of_day = 1
