@@ -1,215 +1,80 @@
 # Realistic Idle City — Godot Project / Scene Architecture v0.1
 
-## Purpose
+> Filename retained for replacement convenience. This version updates the architecture note after **Branch 02**.
 
-This document describes the practical architecture currently intended for the early-game MVP and notes the parts that are already implemented after Branch 01.
+## 1. Purpose
 
-It should be read as both:
-- an architecture guide
-- a reality check against the current project shell
+This document defines the intended Godot-side scene/runtime structure for the early-game MVP.
 
----
-
-## 1. Current implementation snapshot after Branch 01
-
-Implemented shell pieces:
-- boot scene
-- dev world scene
-- placeholder world presentation
-- debug HUD
-- small autoload service layer
-- definition registry
-- definition-driven bootstrap resolution
-
-Current autoloads:
-- `AppRoot`
-- `SimRoot`
-- `TimeService`
-- `EventBus`
-- `DefinitionRegistry`
-- `TelemetryService`
-- `SaveService`
-
-Current runtime flow:
-1. `scenes/bootstrap/boot_scene.tscn`
-2. definitions reload and validate
-3. `SimRoot` resolves scenario -> worldgen -> season -> map preset bootstrap context
-4. `TimeService` adopts season-profile bootstrap defaults
-5. app transitions into `scenes/world/test_world_scene.tscn`
+It explains:
+- what scenes should exist
+- what autoloads should own
+- what should stay presentation-only
+- what should become authoritative later
 
 ---
 
-## 2. Architectural stance
+## 2. Current scene stack
 
-The project should use:
-- a **small autoload/service layer**
-- **Resource-based static definitions**
-- **authoritative runtime state outside scene trees**
-- **scene/node presentation that mirrors but does not own truth**
-- **schema-driven save/load** later
-
-Core rule:
-- static design/content data lives in Resources
-- authoritative runtime simulation state lives in service/manager-owned data
-- presentation scenes are disposable views
-- UI reads state and sends intent back inward
-
----
-
-## 3. Current top-level project layout
-
-```text
-res://
-  autoload/
-    app_root.gd
-    definition_registry.gd
-    event_bus.gd
-    save_service.gd
-    sim_root.gd
-    telemetry_service.gd
-    time_service.gd
-
-  data/
-    defs/
-      incidents/
-      items/
-      map_presets/
-      processes/
-      scenarios/
-      season_profiles/
-      skills/
-      species/
-      stages/
-      structures/
-      terrain_profiles/
-      ui_panels/
-      worldgen_profiles/
-    balance/
-
-  scripts/
-    core/
-      defs/
-    runtime/
-      state/
-    presentation/
-      ui/
-      world/
-    sim/
-    util/
-
-  scenes/
-    bootstrap/
-    world/
-    ui/
-
-  assets/
-```
-
----
-
-## 4. Autoload responsibilities
-
-### 4.1 `AppRoot`
-Owns:
-- high-level scene switching
-- build/version/session metadata access
-- app-level orchestration
-
-### 4.2 `SimRoot`
-Owns:
-- current bootstrap/session context
-- active scenario ID
-- active stage ID
-- active map preset ID
-- active worldgen profile ID
-- active season profile ID
-- active seed
-- world-root registration hooks
-
-### 4.3 `TimeService`
-Owns:
-- calendar snapshot
-- season/part-of-day bootstrap defaults
-- future authoritative clock/tick state
-
-### 4.4 `DefinitionRegistry`
-Owns:
-- definition loading
-- ID validation
-- duplicate-ID detection
-- cross-reference validation
-- boot-time lookup service for static defs
-
-### 4.5 `EventBus`
-Owns:
-- cross-system signal/event plumbing
-
-### 4.6 `TelemetryService`
-Owns:
-- debug/runtime logging
-- boot/validation telemetry
-
-### 4.7 `SaveService`
-Owns:
-- future save/load entry points
-- currently safe to remain mostly stubbed
-
-### 4.8 What should not be autoloaded yet
-Do not autoload:
-- world renderer
-- camera controller
-- HUD controller
-- simulation managers that only matter during an active world
-- gameplay subsystems too early
-
----
-
-## 5. Current scene/presentation layer
-
-### Current scenes
+Current entry path:
 - `scenes/bootstrap/boot_scene.tscn`
 - `scenes/world/test_world_scene.tscn`
 
-### Current presentation scripts
-- `scripts/presentation/world/world_root_controller.gd`
-- `scripts/presentation/world/map_placeholder.gd`
-- `scripts/presentation/ui/dev_hud.gd`
-
-### Important rule
-The current map view is **placeholder presentation only**.
-It is not the authoritative world model and should be treated as disposable once Branch 03–04 land.
+Current world-scene support is created/ensured by `WorldRootController`:
+- placeholder map renderer
+- world camera
+- dev HUD
+- Branch 02 debug scheduled-trigger probe
 
 ---
 
-## 6. Current definition layer
+## 3. Autoload shell
 
-Implemented definition families:
-- stage
-- skill
-- item
-- process
-- structure
-- scenario
-- map preset
-- species
-- terrain profile
-- worldgen profile
-- season profile
-- incident
-- UI panel
+Current autoloads:
+- `EventBus`
+- `TelemetryService`
+- `SaveService`
+- `TimeService`
+- `DefinitionRegistry`
+- `SimRoot`
+- `AppRoot`
 
-Current shared runtime/state helpers:
-- `calendar_ids.gd`
-- `definition_types.gd`
-- `id_rules.gd`
-- `policy_bundle_ids.gd`
-- `shared_enums.gd`
-- `task_def_ids.gd`
-- `zone_types.gd`
+Current responsibility split:
+- `DefinitionRegistry` = static definition loading/validation
+- `SimRoot` = resolved active bootstrap/session context
+- `TimeService` = authoritative Branch 02 calendar + deterministic tick/run loop
+- world scene = temporary presentation/dev shell
 
 ---
 
-## 7. Bootstrap chain rule
+## 4. Presentation-vs-authority rule
+
+Current rule:
+- the world scene is **not** the authoritative simulation state
+- the placeholder map renderer is **not** the authoritative terrain model
+- autoload/runtime services own active session truth
+- future Branch 03 world state should become the authoritative terrain/cell truth
+
+---
+
+## 5. Current world scene doctrine
+
+The current world scene is allowed to:
+- render placeholder terrain
+- host a camera
+- host the dev HUD
+- host dev-only debug probes
+- surface data from runtime services
+
+The current world scene should **not**:
+- become the source of truth for simulation state
+- own canonical terrain facts
+- own hidden gameplay progression state
+- bypass autoload/runtime services for deterministic time advancement
+
+---
+
+## 6. Bootstrap chain rule
 
 The active bootstrap chain should stay definition-driven.
 
@@ -218,24 +83,36 @@ Current intended rule:
 - worldgen profile chooses season profile
 - season profile bootstraps the initial calendar defaults
 - `SimRoot` stores the resolved active context
-- `TimeService` exposes the resolved calendar snapshot
+- `TimeService` exposes the resolved calendar snapshot and run-loop state
 
 Do not replace this with loose hardcoded startup state in random scene scripts.
 
 ---
 
-## 8. Near-term branch boundaries
+## 7. Current Branch 02 runtime rule
 
-### Branch 02
-Should add:
-- deterministic ticking
-- pause/resume/single-step
-- stable phase order
+The deterministic runtime clock now belongs to `TimeService`.
+
+Current phase order:
+1. command intake
+2. time-step start
+3. world pre-update
+4. simulation update
+5. visibility refresh
+6. debug snapshot
+7. end-of-tick bookkeeping
+
+External systems should subscribe through stable APIs/signals/listeners rather than creating parallel time loops in scene code.
+
+---
+
+## 8. Near-term branch boundaries
 
 ### Branch 03
 Should add:
 - authoritative world data model
 - authored map loading into runtime state
+- world cell inspector/debug access
 
 ### Branch 04
 Should add:
@@ -248,7 +125,7 @@ Should add:
 The project should continue as:
 - Resource-defined static content
 - small autoload/service shell
-- runtime truth outside presentation scenes
+- deterministic runtime truth outside presentation scenes
 - definition-driven bootstrap
 - explicit, debug-friendly boundaries
 

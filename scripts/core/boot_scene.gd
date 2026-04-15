@@ -4,42 +4,39 @@ class_name BootScene
 const DEV_WORLD_SCENE_PATH: String = "res://scenes/world/test_world_scene.tscn"
 
 func _ready() -> void:
+	var telemetry_service: Node = _telemetry_service()
+	if telemetry_service != null:
+		telemetry_service.call("log", "boot", "boot_scene_started", {
+			"scene_path": scene_file_path,
+		})
+
 	var definition_registry: Node = _definition_registry()
 	if definition_registry == null:
 		push_error("BootScene: DefinitionRegistry autoload is missing.")
 		_show_boot_failure("Boot failed: DefinitionRegistry autoload is missing.")
 		return
 
-	if definition_registry.has_method("reload_registry"):
-		definition_registry.call("reload_registry")
+	if not _load_and_validate_definitions(definition_registry):
+		return
 
-	if definition_registry.has_method("has_fatal_errors"):
-		var has_fatal_errors: bool = bool(definition_registry.call("has_fatal_errors"))
-		if has_fatal_errors:
-			var error_lines: Array[String] = []
-			if definition_registry.has_method("get_validation_errors"):
-				error_lines = definition_registry.call("get_validation_errors")
-
-			print("BootScene: definition validation failed.")
-			for error_line: String in error_lines:
-				print("BootScene ERROR: %s" % error_line)
-
-			_show_boot_failure(_build_boot_failure_text(error_lines))
-			return
-
-	if not _resolve_sim_bootstrap_context():
+	if not _resolve_bootstrap_context():
 		return
 
 	if not _validate_boot_context(definition_registry):
 		return
 
-	var telemetry_service: Node = _telemetry_service()
-	var sim_root: Node = _sim_root()
+	if not _build_world_runtime_state():
+		return
 
+	var sim_root: Node = _sim_root()
 	if telemetry_service != null and sim_root != null:
 		var definition_report: Dictionary = {}
 		if definition_registry.has_method("get_validation_report"):
 			definition_report = definition_registry.call("get_validation_report")
+
+		var world_snapshot: Dictionary = {}
+		if sim_root.has_method("get_world_debug_snapshot"):
+			world_snapshot = sim_root.call("get_world_debug_snapshot")
 
 		telemetry_service.call("log", "boot", "boot_scene_ready", {
 			"scenario_id": str(sim_root.get("scenario_id")),
@@ -49,20 +46,44 @@ func _ready() -> void:
 			"worldgen_profile_id": str(sim_root.get("worldgen_profile_id")),
 			"season_profile_id": str(sim_root.get("season_profile_id")),
 			"definition_report": definition_report,
+			"world_snapshot": world_snapshot,
 		})
 
 	call_deferred("_go_to_dev_world")
 
-func _go_to_dev_world() -> void:
-	var app_root: Node = _app_root()
-	if app_root == null:
-		push_error("BootScene: AppRoot autoload is missing.")
-		_show_boot_failure("Boot failed: AppRoot autoload is missing.")
-		return
+func _load_and_validate_definitions(definition_registry: Node) -> bool:
+	if not definition_registry.has_method("reload_registry"):
+		push_error("BootScene: DefinitionRegistry missing reload_registry().")
+		_show_boot_failure("Boot failed: DefinitionRegistry missing reload_registry().")
+		return false
 
-	app_root.call("goto_scene", DEV_WORLD_SCENE_PATH)
+	definition_registry.call("reload_registry")
 
-func _resolve_sim_bootstrap_context() -> bool:
+	if not definition_registry.has_method("has_fatal_errors"):
+		push_error("BootScene: DefinitionRegistry missing has_fatal_errors().")
+		_show_boot_failure("Boot failed: DefinitionRegistry missing has_fatal_errors().")
+		return false
+
+	var has_fatal_errors: bool = bool(definition_registry.call("has_fatal_errors"))
+	if has_fatal_errors:
+		var error_lines: Array[String] = []
+		if definition_registry.has_method("get_validation_errors"):
+			error_lines = definition_registry.call("get_validation_errors")
+
+		print("BootScene: definition validation failed.")
+		for error_line: String in error_lines:
+			print("BootScene ERROR: %s" % error_line)
+
+		_show_boot_failure(_build_boot_failure_text(error_lines))
+		return false
+
+	var telemetry_service: Node = _telemetry_service()
+	if telemetry_service != null and definition_registry.has_method("get_validation_report"):
+		telemetry_service.call("log", "boot", "definitions_loaded", definition_registry.call("get_validation_report"))
+
+	return true
+
+func _resolve_bootstrap_context() -> bool:
 	var sim_root: Node = _sim_root()
 	if sim_root == null:
 		push_error("BootScene: SimRoot autoload is missing.")
@@ -140,6 +161,40 @@ func _validate_boot_context(definition_registry: Node) -> bool:
 		return false
 
 	return true
+
+func _build_world_runtime_state() -> bool:
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		push_error("BootScene: SimRoot autoload is missing.")
+		_show_boot_failure("Boot failed: SimRoot autoload is missing.")
+		return false
+
+	if not sim_root.has_method("build_world_state_from_active_definitions"):
+		push_error("BootScene: SimRoot missing build_world_state_from_active_definitions().")
+		_show_boot_failure("Boot failed: SimRoot missing build_world_state_from_active_definitions().")
+		return false
+
+	var build_ok: bool = bool(sim_root.call("build_world_state_from_active_definitions"))
+	if build_ok:
+		return true
+
+	var world_error_message: String = "Boot failed: world runtime state build failed."
+	if sim_root.has_method("get_last_world_load_error"):
+		var detailed_message: String = str(sim_root.call("get_last_world_load_error")).strip_edges()
+		if not detailed_message.is_empty():
+			world_error_message = "Boot failed: %s" % detailed_message
+
+	_show_boot_failure(world_error_message)
+	return false
+
+func _go_to_dev_world() -> void:
+	var app_root: Node = _app_root()
+	if app_root == null:
+		push_error("BootScene: AppRoot autoload is missing.")
+		_show_boot_failure("Boot failed: AppRoot autoload is missing.")
+		return
+
+	app_root.call("goto_scene", DEV_WORLD_SCENE_PATH)
 
 func _build_boot_failure_text(error_lines: Array[String]) -> String:
 	var lines: Array[String] = [

@@ -1,14 +1,14 @@
 extends RefCounted
 class_name SharedEnums
 
-const ALERT_SEVERITIES := [
+const ALERT_SEVERITIES: Array[String] = [
 	"info",
 	"warning",
 	"urgent",
 	"critical",
 ]
 
-const ALERT_DOMAINS := [
+const ALERT_DOMAINS: Array[String] = [
 	"water",
 	"food",
 	"fire",
@@ -23,56 +23,58 @@ const ALERT_DOMAINS := [
 	"task_flow",
 ]
 
-const FOG_STATES := [
-	"unknown",
-	"remembered",
-	"visible",
+const ITEM_CATEGORIES: Array[String] = [
+	"food",
+	"water",
+	"fuel",
+	"material",
+	"tool",
+	"medicine",
 ]
 
-const LANDFORM_TYPES := [
-	"ridge",
-	"slope",
-	"bench",
-	"flat",
-	"depression",
-	"channel",
+const NEED_IDS: Array[String] = [
+	"hydration",
+	"nutrition",
+	"rest",
+	"shelter",
+	"sanitation",
+	"safety",
 ]
 
-const SLOPE_CLASSES := [
-	"flat",
-	"gentle",
-	"moderate",
-	"steep",
+const NPC_STATUS_IDS: Array[String] = [
+	"idle",
+	"working",
+	"hauling",
+	"resting",
+	"injured",
 ]
 
-const DRAINAGE_CLASSES := [
-	"very_poor",
-	"poor",
-	"moderate",
-	"good",
-	"excessive",
+const STAGE_IDS: Array[String] = [
+	"stage.lone_survivor",
 ]
 
-const VEGETATION_COVER_CLASSES := [
-	"bare",
-	"sparse",
-	"grass",
-	"brush",
+const BIOME_IDS: Array[String] = [
+	"temperate_valley",
+]
+
+const LAND_COVER_TYPES: Array[String] = [
+	"grassland",
 	"woodland",
-	"forest",
 	"wetland",
+	"rocky",
+	"clearing",
 ]
 
-const WATER_SOURCE_TYPES := [
-	"river",
-	"stream",
-	"spring",
-	"pond",
-	"lake",
-	"seep",
+const LAND_USE_TYPES: Array[String] = [
+	"wild",
+	"camp_core",
+	"camp_edge",
+	"foraging_zone",
+	"water_access",
+	"waste_zone",
 ]
 
-const ZONE_FAMILIES := [
+const ZONE_FAMILIES: Array[String] = [
 	"life_support",
 	"work",
 	"storage",
@@ -80,9 +82,12 @@ const ZONE_FAMILIES := [
 	"care",
 	"social",
 	"perimeter",
+	"camp",
+	"water",
+	"waste",
 ]
 
-const POLICY_FAMILIES := [
+const POLICY_FAMILIES: Array[String] = [
 	"survival_policy",
 	"water_policy",
 	"food_policy",
@@ -96,7 +101,7 @@ const POLICY_FAMILIES := [
 	"layout_policy",
 ]
 
-const POLICY_EFFECT_VERBS := [
+const POLICY_EFFECT_VERBS: Array[String] = [
 	"allow",
 	"forbid",
 	"prefer",
@@ -112,7 +117,7 @@ const POLICY_EFFECT_VERBS := [
 	"unlock",
 ]
 
-const RESERVE_BUCKET_IDS := [
+const RESERVE_BUCKET_IDS: Array[String] = [
 	"reserve_drinking_water",
 	"reserve_fuel",
 	"reserve_immediate_food",
@@ -124,7 +129,7 @@ const RESERVE_BUCKET_IDS := [
 	"reserve_clean_containers",
 ]
 
-const STOCKPOINT_ROLES := [
+const STOCKPOINT_ROLES: Array[String] = [
 	"general",
 	"water",
 	"food",
@@ -135,7 +140,7 @@ const STOCKPOINT_ROLES := [
 	"waste",
 ]
 
-const STORAGE_ROLES := [
+const STORAGE_ROLES: Array[String] = [
 	"dry",
 	"covered",
 	"potable",
@@ -145,12 +150,94 @@ const STORAGE_ROLES := [
 	"waste",
 ]
 
-const ORDER_TYPE_IDS := [
+const ORDER_TYPE_IDS: Array[String] = [
 	"order_build",
 	"order_gather",
 	"order_haul",
 	"order_designate_zone",
 	"order_set_policy",
+]
+
+const SLOPE_CLASSES: Array[String] = [
+	"flat",
+	"gentle",
+	"moderate",
+	"steep",
+]
+
+const LANDFORM_TYPES: Array[String] = [
+	"ridge",
+	"slope",
+	"bench",
+	"flat",
+	"depression",
+	"channel",
+]
+
+const DRAINAGE_CLASSES: Array[String] = [
+	"very_poor",
+	"poor",
+	"moderate",
+	"good",
+	"excessive",
+]
+
+const VEGETATION_COVER_CLASSES: Array[String] = [
+	"bare",
+	"sparse",
+	"grass",
+	"brush",
+	"woodland",
+	"forest",
+	"wetland",
+]
+
+const WATER_SOURCE_TYPES: Array[String] = [
+	"river",
+	"stream",
+	"spring",
+	"pond",
+	"lake",
+	"seep",
+]
+
+# Old compatibility name still kept for safety.
+const FOG_STATES: Array[String] = [
+	"unknown",
+	"remembered",
+	"visible",
+]
+
+# New explicit name used by the Branch 03 loader.
+const FOG_STATE_IDS: Array[String] = [
+	"unknown",
+	"remembered",
+	"visible",
+]
+
+const SURFACE_WATER_TYPES: Array[String] = [
+	"none",
+	"channel",
+	"pond",
+	"spring",
+	"seep",
+	"lake",
+	"stream",
+	"river",
+]
+
+const WETNESS_TENDENCIES: Array[String] = [
+	"dry",
+	"balanced",
+	"damp",
+	"wet",
+	"saturated",
+]
+
+const GROUND_FIRMNESS_CLASSES: Array[String] = [
+	"soft",
+	"firm",
+	"hard",
 ]
 
 static func contains_value(values: Array, value: String) -> bool:

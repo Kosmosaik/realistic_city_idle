@@ -1,11 +1,14 @@
 extends Node
 
+const AUTHORED_MAP_LOADER_SCRIPT: Script = preload("res://scripts/runtime/world/authored_map_loader.gd")
+
 const DEFAULT_SCENARIO_ID: String = "scenario.dev.temperate_valley"
 const DEFAULT_STAGE_ID: String = "stage.lone_survivor"
 const DEFAULT_MAP_PRESET_ID: String = "starter_map_balanced"
 const DEFAULT_WORLDGEN_PROFILE_ID: String = "authored_starter_temperate_valley"
 const DEFAULT_SEASON_PROFILE_ID: String = "temperate_four_season_basic"
 const DEFAULT_SEED: int = 100001
+const INVALID_CELL_INDEX: Vector2i = Vector2i(-1, -1)
 
 var scenario_id: String = DEFAULT_SCENARIO_ID
 var stage_id: String = DEFAULT_STAGE_ID
@@ -15,7 +18,12 @@ var season_profile_id: String = DEFAULT_SEASON_PROFILE_ID
 var seed: int = DEFAULT_SEED
 var seed_is_overridden: bool = false
 var world_root: Node = null
+var world_state: WorldState = null
 var last_bootstrap_error: String = ""
+var last_world_load_error: String = ""
+
+var debug_hovered_cell_index: Vector2i = INVALID_CELL_INDEX
+var debug_selected_cell_index: Vector2i = INVALID_CELL_INDEX
 
 func _ready() -> void:
 	var telemetry_service: Node = _telemetry_service()
@@ -34,6 +42,7 @@ func set_bootstrap_context(new_scenario_id: String, new_seed: int) -> void:
 	scenario_id = new_scenario_id
 	seed = new_seed
 	seed_is_overridden = true
+	clear_world_state()
 
 	# Try to resolve immediately only if definitions are already loaded.
 	# If they are not loaded yet, BootScene will do the authoritative resolve pass.
@@ -46,6 +55,8 @@ func set_bootstrap_context(new_scenario_id: String, new_seed: int) -> void:
 
 func resolve_bootstrap_context_from_definitions() -> bool:
 	_clear_bootstrap_error()
+	_clear_world_load_error()
+	clear_world_state()
 
 	var definition_registry: Node = _definition_registry()
 	if definition_registry == null:
@@ -134,8 +145,132 @@ func resolve_bootstrap_context_from_definitions() -> bool:
 
 	return true
 
+func build_world_state_from_active_definitions() -> bool:
+	_clear_world_load_error()
+	clear_world_state()
+
+	var definition_registry: Node = _definition_registry()
+	if definition_registry == null:
+		return _fail_world_load("DefinitionRegistry autoload is missing.")
+
+	var map_preset_base_def: BaseDef = definition_registry.call(
+		"get_definition",
+		DefinitionTypes.TYPE_MAP_PRESET,
+		map_preset_id
+	) as BaseDef
+	var map_preset_def: MapPresetDef = map_preset_base_def as MapPresetDef
+	if map_preset_def == null:
+		return _fail_world_load("Map preset definition could not be resolved: %s" % map_preset_id)
+
+	var worldgen_profile_base_def: BaseDef = definition_registry.call(
+		"get_definition",
+		DefinitionTypes.TYPE_WORLDGEN_PROFILE,
+		worldgen_profile_id
+	) as BaseDef
+	var worldgen_profile_def: WorldgenProfileDef = worldgen_profile_base_def as WorldgenProfileDef
+	if worldgen_profile_def == null:
+		return _fail_world_load("Worldgen profile definition could not be resolved: %s" % worldgen_profile_id)
+
+	var authored_map_loader: AuthoredMapLoader = AUTHORED_MAP_LOADER_SCRIPT.new() as AuthoredMapLoader
+	var load_result: Dictionary = authored_map_loader.build_world_state(
+		map_preset_def,
+		worldgen_profile_def,
+		seed
+	)
+
+	if not bool(load_result.get("ok", false)):
+		return _fail_world_load(str(load_result.get("error", "Unknown world load error.")))
+
+	world_state = load_result.get("world_state", null) as WorldState
+	if world_state == null:
+		return _fail_world_load("AuthoredMapLoader returned success without a WorldState.")
+
+	var telemetry_service: Node = _telemetry_service()
+	if telemetry_service != null:
+		telemetry_service.call("log", "world", "world_state_loaded", {
+			"world_id": world_state.world_id,
+			"fixture_id": world_state.fixture_id,
+			"cell_count": world_state.get_cell_count(),
+			"chunk_count": world_state.get_chunk_count(),
+			"patch_count": world_state.get_patch_count(),
+		})
+
+	return true
+
+func clear_world_state() -> void:
+	world_state = null
+	debug_hovered_cell_index = INVALID_CELL_INDEX
+	debug_selected_cell_index = INVALID_CELL_INDEX
+
+func has_world_state() -> bool:
+	return world_state != null
+
+func get_world_state() -> WorldState:
+	return world_state
+
+func get_world_cell_index_at_world_position(world_position: Vector2) -> Vector2i:
+	if world_state == null:
+		return INVALID_CELL_INDEX
+
+	return world_state.world_position_to_cell_index(world_position)
+
+func get_world_cell_debug_snapshot(cell_index: Vector2i) -> Dictionary:
+	if world_state == null:
+		return {}
+
+	if not world_state.is_cell_index_in_bounds(cell_index):
+		return {}
+
+	return world_state.get_cell_debug_snapshot(cell_index)
+
+func get_world_cell_debug_snapshot_at_world_position(world_position: Vector2) -> Dictionary:
+	if world_state == null:
+		return {}
+
+	return world_state.get_cell_debug_snapshot_at_world_position(world_position)
+	
+func get_world_patch_debug_snapshots_for_cell(cell_index: Vector2i) -> Array:
+	if world_state == null:
+		return []
+
+	if not world_state.is_cell_index_in_bounds(cell_index):
+		return []
+
+	return world_state.get_patch_debug_snapshots_for_cell(cell_index)
+
+func get_world_patch_debug_snapshots_at_world_position(world_position: Vector2) -> Array:
+	if world_state == null:
+		return []
+
+	return world_state.get_patch_debug_snapshots_at_world_position(world_position)
+
+func set_debug_hovered_cell_from_world_position(world_position: Vector2) -> void:
+	debug_hovered_cell_index = get_world_cell_index_at_world_position(world_position)
+
+func set_debug_selected_cell_from_world_position(world_position: Vector2) -> void:
+	debug_selected_cell_index = get_world_cell_index_at_world_position(world_position)
+
+func clear_debug_selected_cell() -> void:
+	debug_selected_cell_index = INVALID_CELL_INDEX
+
+func get_world_debug_snapshot() -> Dictionary:
+	if world_state == null:
+		return {
+			"is_loaded": false,
+			"hovered_cell": {},
+			"selected_cell": {},
+		}
+
+	var snapshot: Dictionary = world_state.get_debug_snapshot()
+	snapshot["hovered_cell"] = _build_debug_inspector_entry("hovered", debug_hovered_cell_index)
+	snapshot["selected_cell"] = _build_debug_inspector_entry("selected", debug_selected_cell_index)
+	return snapshot
+
 func get_last_bootstrap_error() -> String:
 	return last_bootstrap_error
+
+func get_last_world_load_error() -> String:
+	return last_world_load_error
 
 func get_boot_context() -> Dictionary:
 	var calendar: Dictionary = {}
@@ -165,6 +300,7 @@ func register_world_root(node: Node) -> void:
 	if telemetry_service != null:
 		telemetry_service.call("log", "world", "world_registered", {
 			"scene_file_path": node.scene_file_path,
+			"world_state_loaded": has_world_state(),
 		})
 
 func unregister_world_root(node: Node) -> void:
@@ -182,6 +318,25 @@ func unregister_world_root(node: Node) -> void:
 		telemetry_service.call("log", "world", "world_unregistered", {
 			"scene_file_path": node.scene_file_path,
 		})
+
+func _build_debug_inspector_entry(label: String, cell_index: Vector2i) -> Dictionary:
+	if world_state == null:
+		return {}
+
+	if not world_state.is_cell_index_in_bounds(cell_index):
+		return {}
+
+	var cell_snapshot: Dictionary = world_state.get_cell_debug_snapshot(cell_index)
+	if cell_snapshot.is_empty():
+		return {}
+
+	var patch_snapshots: Array = world_state.get_patch_debug_snapshots_for_cell(cell_index)
+
+	return {
+		"label": label,
+		"cell": cell_snapshot,
+		"patches": patch_snapshots,
+	}
 
 func _definitions_are_loaded() -> bool:
 	var definition_registry: Node = _definition_registry()
@@ -202,6 +357,14 @@ func _fail_bootstrap(message: String) -> bool:
 
 func _clear_bootstrap_error() -> void:
 	last_bootstrap_error = ""
+
+func _fail_world_load(message: String) -> bool:
+	last_world_load_error = message
+	push_error("SimRoot: %s" % message)
+	return false
+
+func _clear_world_load_error() -> void:
+	last_world_load_error = ""
 
 func _definition_registry() -> Node:
 	return get_node_or_null("/root/DefinitionRegistry")

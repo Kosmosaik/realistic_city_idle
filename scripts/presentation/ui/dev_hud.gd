@@ -99,11 +99,12 @@ func _refresh_text() -> void:
 
 	var build_info: Dictionary = _get_build_info()
 	var boot_context: Dictionary = _get_boot_context()
-	var calendar: Dictionary = boot_context.get("calendar", {})
 	var definition_report: Dictionary = _get_definition_report()
+	var calendar: Dictionary = boot_context.get("calendar", {})
+	var world_snapshot: Dictionary = _get_world_debug_snapshot()
 
 	var recent_phase_entries: Array = calendar.get("debug_recent_phase_entries", [])
-	var phase_duration_map: Dictionary = calendar.get("debug_last_phase_duration_usec_by_phase", {})
+	var phase_duration_map: Dictionary = calendar.get("debug_last_tick_phase_durations_usec", {})
 	var recent_trigger_entries: Array = calendar.get("debug_recent_resolved_trigger_entries", [])
 	var trigger_queue_preview: Array = calendar.get("scheduled_trigger_queue_preview", [])
 	var recent_command_entries: Array = calendar.get("debug_recent_processed_command_entries", [])
@@ -118,9 +119,18 @@ func _refresh_text() -> void:
 	var recent_command_text: String = _build_recent_command_text(recent_command_entries)
 	var command_queue_preview_text: String = _build_command_queue_preview_text(command_queue_preview)
 	var determinism_signature_text: String = _build_hex_signature_text(int(calendar.get("debug_determinism_signature", 0)))
+	var world_focus_text: String = _build_world_focus_text(world_snapshot)
+
+	var hovered_entry: Dictionary = world_snapshot.get("hovered_cell", {}) as Dictionary
+	var selected_entry: Dictionary = world_snapshot.get("selected_cell", {}) as Dictionary
+
+	var hovered_cell_text: String = _build_inspector_cell_text(hovered_entry)
+	var selected_cell_text: String = _build_inspector_cell_text(selected_entry)
+	var hovered_patch_text: String = _build_inspector_patch_text(hovered_entry)
+	var selected_patch_text: String = _build_inspector_patch_text(selected_entry)
 
 	_label.text = "\n".join([
-		"RCI — Branch 02",
+		"RCI — Branch 03 / Slice 03",
 		"Build: %s" % build_info.get("build_version", DEFAULT_BUILD_VERSION),
 		"Engine: %s" % build_info.get("engine_version", "n/a"),
 		"Scene: %s" % build_info.get("current_scene_path", "n/a"),
@@ -131,6 +141,31 @@ func _refresh_text() -> void:
 		"Worldgen: %s" % boot_context.get("worldgen_profile_id", "n/a"),
 		"Season Profile: %s" % boot_context.get("season_profile_id", "n/a"),
 		"Seed: %s" % str(boot_context.get("seed", 0)),
+		"",
+		"World Loaded: %s" % ("Yes" if bool(world_snapshot.get("is_loaded", false)) else "No"),
+		"World ID: %s" % _display_or_dash(str(world_snapshot.get("world_id", ""))),
+		"Fixture: %s" % _display_or_dash(str(world_snapshot.get("fixture_id", ""))),
+		"Terrain Profile: %s" % _display_or_dash(str(world_snapshot.get("primary_terrain_profile_id", ""))),
+		"World Size: %s x %s cells @ %spx" % [
+			str(world_snapshot.get("world_width_cells", 0)),
+			str(world_snapshot.get("world_height_cells", 0)),
+			str(world_snapshot.get("cell_size_pixels", 0)),
+		],
+		"World Cells: %s" % str(world_snapshot.get("cell_count", 0)),
+		"World Chunks: %s" % str(world_snapshot.get("chunk_count", 0)),
+		"World Patches: %s" % str(world_snapshot.get("patch_count", 0)),
+		"Focus Cells:",
+		world_focus_text,
+		"",
+		"Hovered Cell:",
+		hovered_cell_text,
+		"Hovered Patches:",
+		hovered_patch_text,
+		"",
+		"Selected Cell:",
+		selected_cell_text,
+		"Selected Patches:",
+		selected_patch_text,
 		"",
 		"Run State: %s" % pause_text,
 		"Tick: %s" % str(calendar.get("tick_index", 0)),
@@ -189,6 +224,8 @@ func _refresh_text() -> void:
 		"",
 		"F3: toggle HUD",
 		"Mouse wheel: scroll HUD",
+		"Left click: select cell",
+		"Right click: clear selected cell",
 		"Space: pause/resume",
 		". : single-step",
 		"[ / ] : speed down/up",
@@ -374,3 +411,208 @@ func _get_definition_report() -> Dictionary:
 		"warning_count": 0,
 		"error_count": 1,
 	}
+	
+func _get_world_debug_snapshot() -> Dictionary:
+	var sim_root: Node = get_node_or_null("/root/SimRoot")
+	if sim_root != null and sim_root.has_method("get_world_debug_snapshot"):
+		return sim_root.call("get_world_debug_snapshot")
+
+	return {
+		"is_loaded": false,
+	}
+
+func _build_world_focus_text(world_snapshot: Dictionary) -> String:
+	var focus_cells: Array = world_snapshot.get("focus_cells", [])
+	if focus_cells.is_empty():
+		return "  - -"
+
+	var lines: Array[String] = []
+
+	for entry_variant: Variant in focus_cells:
+		if not (entry_variant is Dictionary):
+			continue
+
+		var entry: Dictionary = entry_variant as Dictionary
+		lines.append("  - %s" % _build_focus_cell_line(entry))
+
+	if lines.is_empty():
+		return "  - -"
+
+	return "\n".join(lines)
+
+func _build_focus_cell_line(entry: Dictionary) -> String:
+	var label: String = str(entry.get("label", "focus"))
+	var cell: Dictionary = entry.get("cell", {}) as Dictionary
+
+	var cell_index_variant: Variant = cell.get("cell_index", Vector2i.ZERO)
+	var cell_index: Vector2i = Vector2i.ZERO
+	if cell_index_variant is Vector2i:
+		cell_index = cell_index_variant as Vector2i
+
+	var poi_text: String = _build_string_list_text(cell.get("point_of_interest_tags", []))
+
+	return "%s @ (%s,%s) | landform=%s | slope=%s | drainage=%s | wetness=%s | water=%s | veg=%s | buildable=%s | poi=%s" % [
+		label,
+		cell_index.x,
+		cell_index.y,
+		str(cell.get("landform_type", "")),
+		str(cell.get("slope_class", "")),
+		str(cell.get("drainage_class", "")),
+		str(cell.get("wetness_tendency", "")),
+		str(cell.get("surface_water_type", "")),
+		str(cell.get("vegetation_cover_class", "")),
+		str(cell.get("is_buildable", false)),
+		poi_text,
+	]
+
+func _build_string_list_text(values_variant: Variant) -> String:
+	var parts: Array[String] = []
+
+	if values_variant is PackedStringArray:
+		for value: String in values_variant:
+			parts.append(value)
+	elif values_variant is Array:
+		for value_variant: Variant in values_variant:
+			parts.append(str(value_variant))
+
+	if parts.is_empty():
+		return "-"
+
+	return ",".join(parts)
+	
+func _build_inspector_cell_text(entry_variant: Variant) -> String:
+	if not (entry_variant is Dictionary):
+		return "  - -"
+
+	var entry: Dictionary = entry_variant as Dictionary
+	var cell: Dictionary = entry.get("cell", {}) as Dictionary
+	if cell.is_empty():
+		return "  - -"
+
+	var label: String = str(entry.get("label", "cell"))
+	var cell_index_variant: Variant = cell.get("cell_index", Vector2i.ZERO)
+	var cell_index: Vector2i = Vector2i.ZERO
+	if cell_index_variant is Vector2i:
+		cell_index = cell_index_variant as Vector2i
+
+	var patch_text: String = _build_string_list_text(cell.get("patch_ids", []))
+	var poi_text: String = _build_string_list_text(cell.get("point_of_interest_tags", []))
+	var zone_stamp_id: String = _display_or_dash(str(cell.get("zone_stamp_id", "")))
+
+	return "\n".join([
+		"  - %s @ (%s,%s) | key=%s | chunk=%s | patches=%s" % [
+			label,
+			cell_index.x,
+			cell_index.y,
+			str(cell.get("cell_key", "")),
+			_display_or_dash(str(cell.get("chunk_id", ""))),
+			patch_text,
+		],
+		"    elev=%s | landform=%s | slope=%s | water=%s | drainage=%s | wetness=%s | firmness=%s | veg=%s" % [
+			str(cell.get("elevation_step", 0)),
+			str(cell.get("landform_type", "")),
+			str(cell.get("slope_class", "")),
+			str(cell.get("surface_water_type", "")),
+			str(cell.get("drainage_class", "")),
+			str(cell.get("wetness_tendency", "")),
+			str(cell.get("ground_firmness_class", "")),
+			str(cell.get("vegetation_cover_class", "")),
+		],
+		"    move=%s | haul=%s | buildable=%s | fog=%s | revealed=%s | visible=%s | zone=%s | poi=%s" % [
+			_format_float_text(float(cell.get("movement_cost", 0.0))),
+			_format_float_text(float(cell.get("haul_cost_multiplier", 0.0))),
+			str(cell.get("is_buildable", false)),
+			str(cell.get("fog_state", "")),
+			str(cell.get("is_revealed", false)),
+			str(cell.get("is_currently_visible", false)),
+			zone_stamp_id,
+			poi_text,
+		],
+	])
+
+func _format_float_text(value: float) -> String:
+	return "%.2f" % value
+	
+func _build_inspector_patch_text(entry_variant: Variant) -> String:
+	if not (entry_variant is Dictionary):
+		return "  - -"
+
+	var entry: Dictionary = entry_variant as Dictionary
+	var patches_variant: Variant = entry.get("patches", [])
+	if not (patches_variant is Array):
+		return "  - -"
+
+	var patches: Array = patches_variant as Array
+	if patches.is_empty():
+		return "  - -"
+
+	var lines: Array[String] = []
+
+	for patch_variant: Variant in patches:
+		if not (patch_variant is Dictionary):
+			continue
+
+		var patch: Dictionary = patch_variant as Dictionary
+		var poi_text: String = _build_string_list_text(patch.get("point_of_interest_tags", []))
+		var resource_text: String = _build_summary_dict_text(patch.get("resource_summary", {}))
+		var hazard_text: String = _build_summary_dict_text(patch.get("hazard_summary", {}))
+
+		lines.append(
+			"  - %s | type=%s | area=%s | reveal=%s | site=%s" % [
+				_display_or_dash(str(patch.get("patch_id", ""))),
+				_display_or_dash(str(patch.get("patch_type", ""))),
+				str(patch.get("area_cell_count", 0)),
+				_display_or_dash(str(patch.get("reveal_state", ""))),
+				_format_float_text(float(patch.get("site_score", 0.0))),
+			]
+		)
+
+		lines.append(
+			"    terrain=%s | vegetation=%s | drainage=%s | water=%s | buildable=%s | poi=%s" % [
+				_display_or_dash(str(patch.get("dominant_landform_type", patch.get("landform_type", "")))),
+				_display_or_dash(str(patch.get("dominant_vegetation_cover_class", patch.get("vegetation_cover_class", "")))),
+				_display_or_dash(str(patch.get("dominant_drainage_class", patch.get("drainage_class", "")))),
+				_display_or_dash(str(patch.get("surface_water_type", ""))),
+				str(patch.get("is_buildable", false)),
+				poi_text,
+			]
+		)
+
+		lines.append(
+			"    resources=%s | hazards=%s" % [
+				resource_text,
+				hazard_text,
+			]
+		)
+
+	if lines.is_empty():
+		return "  - -"
+
+	return "\n".join(lines)
+
+func _build_summary_dict_text(summary_variant: Variant) -> String:
+	if not (summary_variant is Dictionary):
+		return "-"
+
+	var summary: Dictionary = summary_variant as Dictionary
+	if summary.is_empty():
+		return "-"
+
+	var keys: Array[String] = []
+	for key_variant: Variant in summary.keys():
+		keys.append(str(key_variant))
+
+	keys.sort()
+
+	var parts: Array[String] = []
+
+	for key: String in keys:
+		var value: Variant = summary.get(key, null)
+
+		if value is PackedStringArray or value is Array:
+			parts.append("%s=%s" % [key, _build_string_list_text(value)])
+			continue
+
+		parts.append("%s=%s" % [key, str(value)])
+
+	return ", ".join(parts)
