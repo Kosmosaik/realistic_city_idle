@@ -1,100 +1,110 @@
 extends RefCounted
 class_name WorldCellState
 
-var cell_key: String = ""
 var cell_index: Vector2i = Vector2i.ZERO
 var world_position: Vector2 = Vector2.ZERO
 var chunk_id: String = ""
 var patch_ids: PackedStringArray = PackedStringArray()
 
-# Static terrain truth.
 var elevation_step: int = 0
 var slope_class: String = "flat"
-var landform_type: String = "flat"
+var landform_type: String = "plain"
 var surface_water_type: String = "none"
-var drainage_class: String = "moderate"
+var drainage_class: String = "good"
 var wetness_tendency: String = "balanced"
 var ground_firmness_class: String = "firm"
-var vegetation_cover_class: String = "grass"
+var vegetation_cover_class: String = "grass_sparse"
 
-# Derived or convenience values.
 var movement_cost: float = 1.0
 var haul_cost_multiplier: float = 1.0
 var is_buildable: bool = true
-
-# Mutable runtime state.
-var fog_state: String = "unknown"
-var is_revealed: bool = false
-var is_currently_visible: bool = false
 var point_of_interest_tags: PackedStringArray = PackedStringArray()
 var zone_stamp_id: String = ""
 
-func apply_values(data: Dictionary) -> void:
-	if data.has("elevation_step"):
-		elevation_step = int(data.get("elevation_step", elevation_step))
+# Authoritative visibility runtime state.
+var fog_state: String = "unknown"
+var is_revealed: bool = false
+var is_currently_visible: bool = false
+var first_revealed_tick: int = -1
+var last_seen_tick: int = -1
+var survey_quality_class: String = "none"
+var terrain_confidence_class: String = "none"
 
-	if data.has("slope_class"):
-		slope_class = str(data.get("slope_class", slope_class))
+func apply_values(cell_values: Dictionary) -> void:
+	if cell_values.has("cell_index"):
+		cell_index = cell_values.get("cell_index", Vector2i.ZERO)
 
-	if data.has("landform_type"):
-		landform_type = str(data.get("landform_type", landform_type))
+	if cell_values.has("world_position"):
+		world_position = cell_values.get("world_position", Vector2.ZERO)
 
-	if data.has("surface_water_type"):
-		surface_water_type = str(data.get("surface_water_type", surface_water_type))
+	if cell_values.has("chunk_id"):
+		chunk_id = str(cell_values.get("chunk_id", ""))
 
-	if data.has("drainage_class"):
-		drainage_class = str(data.get("drainage_class", drainage_class))
+	if cell_values.has("patch_ids"):
+		patch_ids = _variant_to_packed_string_array(cell_values.get("patch_ids", []))
 
-	if data.has("wetness_tendency"):
-		wetness_tendency = str(data.get("wetness_tendency", wetness_tendency))
+	if cell_values.has("elevation_step"):
+		elevation_step = int(cell_values.get("elevation_step", 0))
 
-	if data.has("ground_firmness_class"):
-		ground_firmness_class = str(data.get("ground_firmness_class", ground_firmness_class))
+	if cell_values.has("slope_class"):
+		slope_class = str(cell_values.get("slope_class", slope_class))
 
-	if data.has("vegetation_cover_class"):
-		vegetation_cover_class = str(data.get("vegetation_cover_class", vegetation_cover_class))
+	if cell_values.has("landform_type"):
+		landform_type = str(cell_values.get("landform_type", landform_type))
 
-	if data.has("movement_cost"):
-		movement_cost = float(data.get("movement_cost", movement_cost))
+	if cell_values.has("surface_water_type"):
+		surface_water_type = str(cell_values.get("surface_water_type", surface_water_type))
 
-	if data.has("haul_cost_multiplier"):
-		haul_cost_multiplier = float(data.get("haul_cost_multiplier", haul_cost_multiplier))
+	if cell_values.has("drainage_class"):
+		drainage_class = str(cell_values.get("drainage_class", drainage_class))
 
-	if data.has("is_buildable"):
-		is_buildable = bool(data.get("is_buildable", is_buildable))
+	if cell_values.has("wetness_tendency"):
+		wetness_tendency = str(cell_values.get("wetness_tendency", wetness_tendency))
 
-	if data.has("fog_state"):
-		fog_state = str(data.get("fog_state", fog_state))
+	if cell_values.has("ground_firmness_class"):
+		ground_firmness_class = str(cell_values.get("ground_firmness_class", ground_firmness_class))
 
-	if data.has("is_revealed"):
-		is_revealed = bool(data.get("is_revealed", is_revealed))
+	if cell_values.has("vegetation_cover_class"):
+		vegetation_cover_class = str(cell_values.get("vegetation_cover_class", vegetation_cover_class))
 
-	if data.has("is_currently_visible"):
-		is_currently_visible = bool(data.get("is_currently_visible", is_currently_visible))
+	if cell_values.has("movement_cost"):
+		movement_cost = float(cell_values.get("movement_cost", movement_cost))
 
-	if data.has("zone_stamp_id"):
-		zone_stamp_id = str(data.get("zone_stamp_id", zone_stamp_id))
+	if cell_values.has("haul_cost_multiplier"):
+		haul_cost_multiplier = float(cell_values.get("haul_cost_multiplier", haul_cost_multiplier))
 
-func add_patch_id(new_patch_id: String) -> void:
-	var trimmed_patch_id: String = new_patch_id.strip_edges()
-	if trimmed_patch_id.is_empty():
-		return
+	if cell_values.has("is_buildable"):
+		is_buildable = bool(cell_values.get("is_buildable", is_buildable))
 
-	if not patch_ids.has(trimmed_patch_id):
-		patch_ids.append(trimmed_patch_id)
+	if cell_values.has("point_of_interest_tags"):
+		point_of_interest_tags = _variant_to_packed_string_array(cell_values.get("point_of_interest_tags", []))
 
-func merge_point_of_interest_tags(new_tags: PackedStringArray) -> void:
-	for tag: String in new_tags:
-		var trimmed_tag: String = tag.strip_edges()
-		if trimmed_tag.is_empty():
-			continue
+	if cell_values.has("zone_stamp_id"):
+		zone_stamp_id = str(cell_values.get("zone_stamp_id", zone_stamp_id))
 
-		if not point_of_interest_tags.has(trimmed_tag):
-			point_of_interest_tags.append(trimmed_tag)
+	if cell_values.has("fog_state"):
+		fog_state = str(cell_values.get("fog_state", fog_state))
+
+	if cell_values.has("is_revealed"):
+		is_revealed = bool(cell_values.get("is_revealed", is_revealed))
+
+	if cell_values.has("is_currently_visible"):
+		is_currently_visible = bool(cell_values.get("is_currently_visible", is_currently_visible))
+
+	if cell_values.has("first_revealed_tick"):
+		first_revealed_tick = int(cell_values.get("first_revealed_tick", first_revealed_tick))
+
+	if cell_values.has("last_seen_tick"):
+		last_seen_tick = int(cell_values.get("last_seen_tick", last_seen_tick))
+
+	if cell_values.has("survey_quality_class"):
+		survey_quality_class = str(cell_values.get("survey_quality_class", survey_quality_class))
+
+	if cell_values.has("terrain_confidence_class"):
+		terrain_confidence_class = str(cell_values.get("terrain_confidence_class", terrain_confidence_class))
 
 func to_debug_dictionary() -> Dictionary:
 	return {
-		"cell_key": cell_key,
 		"cell_index": cell_index,
 		"world_position": world_position,
 		"chunk_id": chunk_id,
@@ -110,9 +120,25 @@ func to_debug_dictionary() -> Dictionary:
 		"movement_cost": movement_cost,
 		"haul_cost_multiplier": haul_cost_multiplier,
 		"is_buildable": is_buildable,
+		"point_of_interest_tags": point_of_interest_tags,
+		"zone_stamp_id": zone_stamp_id,
 		"fog_state": fog_state,
 		"is_revealed": is_revealed,
 		"is_currently_visible": is_currently_visible,
-		"point_of_interest_tags": point_of_interest_tags,
-		"zone_stamp_id": zone_stamp_id,
+		"first_revealed_tick": first_revealed_tick,
+		"last_seen_tick": last_seen_tick,
+		"survey_quality_class": survey_quality_class,
+		"terrain_confidence_class": terrain_confidence_class,
 	}
+
+func _variant_to_packed_string_array(value: Variant) -> PackedStringArray:
+	var result: PackedStringArray = PackedStringArray()
+
+	if value is PackedStringArray:
+		return value
+
+	if value is Array:
+		for entry: Variant in value:
+			result.append(str(entry))
+
+	return result

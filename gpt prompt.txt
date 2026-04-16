@@ -1,3 +1,12 @@
-Follow the project docs as the source of truth. Do not invent architecture that conflicts with them. Write future-proof, data-driven, modular code with clear responsibilities, reusable systems, and configurable definitions for content like items, processes, buildings, tasks, and NPC data. Prefer clean structures over shortcuts or hardcoding. Keep implementation aligned with the technical specs, naming, enums, schemas, and progression rules already established. When uncertain, reconcile with the documentation and/or user before changing direction. Add short explanations as comments in the code. Don't use inferred variables but explicit.
+Open the new zip and recursively read all files. Follow the project docs as the source of truth. Do not invent architecture that conflicts with them. Write future-proof, data-driven, modular code with clear responsibilities, reusable systems, and configurable definitions for content like items, processes, buildings, tasks, and NPC data. Prefer clean structures over shortcuts or hardcoding. Keep implementation aligned with the technical specs, naming, enums, schemas, and progression rules already established. When uncertain, reconcile with the documentation and/or user before changing direction. Add short explanations as comments in the code. Don't use inferred variables but explicit.
 
-Give me exact instructions, give me code blocks (preferably whole functions or scripts) to put in the scripts and explain what we're doing each step in the chat. Don't send patch files or script files. Send me the code in the chat preferably embedded in a scrollable text window (should be default for you already) so I can copy and paste the code directly into Godot.
+Give me exact instructions, give me full code blocks (preferably whole functions or scripts) to put in the scripts and explain what we're doing each step in the chat. Don't send patch files or script files. Send me the code in the chat embedded in a scrollable text window (should be default for you already) so I can copy and paste the code directly into Godot. If giving me a code block to put inside an existing script, tell me exactly where to put it (not "somewhere around…" , not "where you have your other …").
+
+
+
+
+
+I don't know if I like that we are adding patches aimed for "site evaluation" like "tempting bad site".
+I kinda want the terrain to only focus on terrain, and then let the player decide where to "put" a site,
+where to build etc, and let the player figure those things out without having pre-drawned areas for it.
+Do you feel me? 

@@ -1,0 +1,400 @@
+extends Node2D
+class_name TerrainOverlayRenderer
+
+const PATCH_BOUNDARY_COLOR: Color = Color(1.0, 1.0, 1.0, 0.75)
+const OUTLINE_WIDTH: float = 2.0
+
+var _last_world_id: String = ""
+var _last_overlay_mode_id: String = "off"
+
+var _cached_elevation_bounds_world_id: String = ""
+var _cached_elevation_bounds: Dictionary = {}
+
+func _ready() -> void:
+	set_process(true)
+	set_process_unhandled_input(true)
+	queue_redraw()
+
+func _process(_delta: float) -> void:
+	var current_world_id: String = _get_current_world_id()
+	var current_overlay_mode_id: String = _get_current_overlay_mode_id()
+
+	var needs_redraw: bool = false
+
+	if current_world_id != _last_world_id:
+		_last_world_id = current_world_id
+		_clear_overlay_caches()
+		needs_redraw = true
+
+	if current_overlay_mode_id != _last_overlay_mode_id:
+		_last_overlay_mode_id = current_overlay_mode_id
+		needs_redraw = true
+
+	if needs_redraw:
+		queue_redraw()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey):
+		return
+
+	var key_event: InputEventKey = event as InputEventKey
+	if key_event == null:
+		return
+
+	if not key_event.pressed:
+		return
+
+	if key_event.echo:
+		return
+
+	if key_event.keycode != KEY_O:
+		return
+
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		return
+
+	var direction: int = 1
+	if key_event.shift_pressed:
+		direction = -1
+
+	if sim_root.has_method("cycle_debug_overlay_mode"):
+		sim_root.call("cycle_debug_overlay_mode", direction)
+		queue_redraw()
+		get_viewport().set_input_as_handled()
+
+func _draw() -> void:
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		return
+
+	if not sim_root.has_method("get_world_state"):
+		return
+
+	var world_state_variant: Variant = sim_root.call("get_world_state")
+	var world_state: WorldState = world_state_variant as WorldState
+	if world_state == null:
+		return
+
+	var overlay_mode_id: String = _get_current_overlay_mode_id()
+	if overlay_mode_id == "off":
+		return
+
+	match overlay_mode_id:
+		"elevation":
+			_draw_elevation_overlay(world_state)
+		"drainage":
+			_draw_drainage_overlay(world_state)
+		"wetness":
+			_draw_wetness_overlay(world_state)
+		"vegetation":
+			_draw_vegetation_overlay(world_state)
+		"buildability":
+			_draw_buildability_overlay(world_state)
+		"site_score":
+			_draw_site_score_overlay(world_state)
+		"patch_boundaries":
+			_draw_patch_boundary_overlay(world_state)
+		"fog_memory":
+			_draw_fog_memory_overlay(world_state)
+		_:
+			pass
+
+func _draw_elevation_overlay(world_state: WorldState) -> void:
+	var elevation_bounds: Dictionary = _get_elevation_bounds(world_state)
+	var min_elevation_step: int = int(elevation_bounds.get("min_elevation_step", 0))
+	var max_elevation_step: int = int(elevation_bounds.get("max_elevation_step", 0))
+
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			var normalized_value: float = _normalize_scalar(
+				float(cell_state.elevation_step),
+				float(min_elevation_step),
+				float(max_elevation_step)
+			)
+
+			var overlay_color: Color = _lerp_color(
+				Color(0.10, 0.20, 0.32, 0.32),
+				Color(0.78, 0.60, 0.30, 0.55),
+				normalized_value
+			)
+
+			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
+
+func _draw_drainage_overlay(world_state: WorldState) -> void:
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			var drainage_class: String = cell_state.drainage_class
+			var overlay_color: Color = Color(0.40, 0.40, 0.40, 0.18)
+
+			match drainage_class:
+				"poor":
+					overlay_color = Color(0.95, 0.35, 0.20, 0.45)
+				"moderate":
+					overlay_color = Color(0.92, 0.75, 0.20, 0.38)
+				"good":
+					overlay_color = Color(0.20, 0.78, 0.52, 0.34)
+				_:
+					overlay_color = Color(0.50, 0.50, 0.50, 0.18)
+
+			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
+
+func _draw_wetness_overlay(world_state: WorldState) -> void:
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			var wetness_tendency: String = cell_state.wetness_tendency
+			var overlay_color: Color = Color(0.45, 0.45, 0.45, 0.16)
+
+			match wetness_tendency:
+				"dry":
+					overlay_color = Color(0.90, 0.78, 0.42, 0.30)
+				"damp":
+					overlay_color = Color(0.38, 0.74, 0.58, 0.30)
+				"wet":
+					overlay_color = Color(0.22, 0.55, 0.95, 0.42)
+				_:
+					overlay_color = Color(0.55, 0.55, 0.55, 0.16)
+
+			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
+
+func _draw_vegetation_overlay(world_state: WorldState) -> void:
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			var vegetation_cover_class: String = cell_state.vegetation_cover_class
+			var overlay_color: Color = Color(0.40, 0.60, 0.40, 0.18)
+
+			match vegetation_cover_class:
+				"none":
+					overlay_color = Color(0.65, 0.60, 0.48, 0.16)
+				"sparse":
+					overlay_color = Color(0.62, 0.76, 0.42, 0.22)
+				"grass":
+					overlay_color = Color(0.42, 0.82, 0.32, 0.28)
+				"brush":
+					overlay_color = Color(0.24, 0.60, 0.24, 0.34)
+				"woodland":
+					overlay_color = Color(0.14, 0.42, 0.18, 0.40)
+				_:
+					overlay_color = Color(0.30, 0.70, 0.30, 0.22)
+
+			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
+
+func _draw_buildability_overlay(world_state: WorldState) -> void:
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			var overlay_color: Color = Color(0.85, 0.20, 0.20, 0.30)
+			if cell_state.is_buildable:
+				overlay_color = Color(0.18, 0.78, 0.32, 0.28)
+
+			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
+
+func _draw_site_score_overlay(world_state: WorldState) -> void:
+	var patch_states: Array[WorldPatchState] = world_state.get_all_patches()
+
+	for patch_state: WorldPatchState in patch_states:
+		if patch_state == null:
+			continue
+
+		var patch_rect: Rect2 = _build_patch_world_rect(world_state, patch_state)
+		if patch_rect.size.x <= 0.0 or patch_rect.size.y <= 0.0:
+			continue
+
+		# Site score is a patch-level signal, so render it as a patch heatmap.
+		var normalized_site_score: float = clamp(patch_state.site_score / 100.0, 0.0, 1.0)
+		var fill_color: Color = _resolve_site_score_fill_color(normalized_site_score)
+		var outline_color: Color = _resolve_site_score_outline_color(normalized_site_score)
+
+		draw_rect(patch_rect, fill_color, true)
+		draw_rect(patch_rect, outline_color, false, 1.0)
+
+func _draw_patch_boundary_overlay(world_state: WorldState) -> void:
+	var patch_states: Array[WorldPatchState] = world_state.get_all_patches()
+
+	for patch_state: WorldPatchState in patch_states:
+		if patch_state == null:
+			continue
+
+		var patch_rect: Rect2 = _build_patch_world_rect(world_state, patch_state)
+		if patch_rect.size.x <= 0.0 or patch_rect.size.y <= 0.0:
+			continue
+
+		var outline_color: Color = _resolve_patch_outline_color(patch_state)
+		draw_rect(patch_rect, outline_color, false, OUTLINE_WIDTH)
+
+func _draw_fog_memory_overlay(world_state: WorldState) -> void:
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			var overlay_color: Color = _resolve_fog_memory_overlay_color(cell_state)
+			if overlay_color.a <= 0.0:
+				continue
+
+			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
+
+func _get_elevation_bounds(world_state: WorldState) -> Dictionary:
+	if _cached_elevation_bounds_world_id == world_state.world_id and not _cached_elevation_bounds.is_empty():
+		return _cached_elevation_bounds
+
+	var bounds: Dictionary = _find_elevation_bounds(world_state)
+	_cached_elevation_bounds_world_id = world_state.world_id
+	_cached_elevation_bounds = bounds
+	return bounds
+
+func _find_elevation_bounds(world_state: WorldState) -> Dictionary:
+	var has_value: bool = false
+	var min_elevation_step: int = 0
+	var max_elevation_step: int = 0
+
+	for y: int in range(world_state.world_height_cells):
+		for x: int in range(world_state.world_width_cells):
+			var cell_index: Vector2i = Vector2i(x, y)
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			if not has_value:
+				min_elevation_step = cell_state.elevation_step
+				max_elevation_step = cell_state.elevation_step
+				has_value = true
+				continue
+
+			min_elevation_step = mini(min_elevation_step, cell_state.elevation_step)
+			max_elevation_step = maxi(max_elevation_step, cell_state.elevation_step)
+
+	return {
+		"min_elevation_step": min_elevation_step,
+		"max_elevation_step": max_elevation_step,
+	}
+
+func _build_patch_world_rect(world_state: WorldState, patch_state: WorldPatchState) -> Rect2:
+	var patch_position_pixels: Vector2 = Vector2(
+		float(patch_state.rect_position.x * world_state.cell_size_pixels),
+		float(patch_state.rect_position.y * world_state.cell_size_pixels)
+	)
+
+	var patch_size_pixels: Vector2 = Vector2(
+		float(patch_state.rect_size.x * world_state.cell_size_pixels),
+		float(patch_state.rect_size.y * world_state.cell_size_pixels)
+	)
+
+	return Rect2(patch_position_pixels, patch_size_pixels)
+
+func _resolve_site_score_fill_color(normalized_site_score: float) -> Color:
+	var clamped_score: float = clamp(normalized_site_score, 0.0, 1.0)
+
+	var low_color: Color = Color(0.84, 0.30, 0.20, 0.26)
+	var mid_color: Color = Color(0.95, 0.74, 0.24, 0.24)
+	var high_color: Color = Color(0.24, 0.78, 0.40, 0.24)
+
+	if clamped_score <= 0.5:
+		return _lerp_color(low_color, mid_color, clamped_score / 0.5)
+
+	return _lerp_color(mid_color, high_color, (clamped_score - 0.5) / 0.5)
+
+func _resolve_site_score_outline_color(normalized_site_score: float) -> Color:
+	var clamped_score: float = clamp(normalized_site_score, 0.0, 1.0)
+
+	var low_color: Color = Color(0.92, 0.32, 0.24, 0.60)
+	var mid_color: Color = Color(1.0, 0.82, 0.28, 0.58)
+	var high_color: Color = Color(0.32, 0.92, 0.48, 0.60)
+
+	if clamped_score <= 0.5:
+		return _lerp_color(low_color, mid_color, clamped_score / 0.5)
+
+	return _lerp_color(mid_color, high_color, (clamped_score - 0.5) / 0.5)
+
+func _resolve_patch_outline_color(patch_state: WorldPatchState) -> Color:
+	if patch_state.surface_water_type != "none":
+		return Color(0.28, 0.68, 1.0, 0.85)
+
+	if patch_state.is_buildable:
+		return Color(0.40, 1.0, 0.55, 0.85)
+
+	return PATCH_BOUNDARY_COLOR
+
+func _resolve_fog_memory_overlay_color(cell_state: WorldCellState) -> Color:
+	# Visible cells stay almost clear so terrain remains readable.
+	if cell_state.is_currently_visible:
+		return Color(0.85, 1.0, 0.90, 0.06)
+
+	# Remembered but not currently visible cells get a muted cool tint.
+	if cell_state.is_revealed:
+		return Color(0.40, 0.52, 0.78, 0.24)
+
+	# Fully hidden cells get a darker obscuring tint.
+	return Color(0.03, 0.04, 0.06, 0.56)
+
+func _normalize_scalar(value: float, min_value: float, max_value: float) -> float:
+	if max_value <= min_value:
+		return 0.0
+
+	return clamp((value - min_value) / (max_value - min_value), 0.0, 1.0)
+
+func _lerp_color(color_a: Color, color_b: Color, weight: float) -> Color:
+	return Color(
+		lerpf(color_a.r, color_b.r, weight),
+		lerpf(color_a.g, color_b.g, weight),
+		lerpf(color_a.b, color_b.b, weight),
+		lerpf(color_a.a, color_b.a, weight)
+	)
+
+func _clear_overlay_caches() -> void:
+	_cached_elevation_bounds_world_id = ""
+	_cached_elevation_bounds = {}
+
+func _get_current_world_id() -> String:
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		return ""
+
+	if not sim_root.has_method("get_world_state"):
+		return ""
+
+	var world_state_variant: Variant = sim_root.call("get_world_state")
+	var current_world_state: WorldState = world_state_variant as WorldState
+	if current_world_state == null:
+		return ""
+
+	return current_world_state.world_id
+
+func _get_current_overlay_mode_id() -> String:
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		return "off"
+
+	if not sim_root.has_method("get_debug_overlay_mode_id"):
+		return "off"
+
+	return str(sim_root.call("get_debug_overlay_mode_id"))
+
+func _sim_root() -> Node:
+	return get_node_or_null("/root/SimRoot")

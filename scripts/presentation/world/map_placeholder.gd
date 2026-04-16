@@ -16,7 +16,7 @@ const COLOR_SITE: Color = Color8(201, 182, 129)
 const COLOR_GRID: Color = Color(1.0, 1.0, 1.0, 0.05)
 const COLOR_BORDER: Color = Color(0.0, 0.0, 0.0, 0.45)
 
-const TREE_COUNT: int = 50
+const TREE_COUNT: int = 500
 const TREE_ATTEMPT_LIMIT: int = 400
 const TREE_MARGIN: float = 24.0
 const TREE_SPACING_BUFFER: float = 10.0

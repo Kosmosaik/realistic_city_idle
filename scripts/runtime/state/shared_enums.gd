@@ -215,6 +215,20 @@ const FOG_STATE_IDS: Array[String] = [
 	"visible",
 ]
 
+const SURVEY_QUALITY_CLASSES: Array[String] = [
+	"none",
+	"glanced",
+	"walked",
+	"inspected",
+]
+
+const TERRAIN_CONFIDENCE_CLASSES: Array[String] = [
+	"none",
+	"rough",
+	"usable",
+	"good",
+]
+
 const SURFACE_WATER_TYPES: Array[String] = [
 	"none",
 	"channel",

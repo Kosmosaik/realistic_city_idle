@@ -8,10 +8,12 @@ const PANEL_WIDTH: float = 660.0
 const PANEL_OUTER_MARGIN: float = 8.0
 const PANEL_INNER_MARGIN: float = 6.0
 const PANEL_MIN_HEIGHT: float = 220.0
+const HUD_REFRESH_INTERVAL_SECONDS: float = 0.25
 
 var _panel_root: Control
 var _scroll_container: ScrollContainer
 var _label: Label
+var _hud_refresh_cooldown_seconds: float = 0.0
 
 func _ready() -> void:
 	layer = 10
@@ -19,11 +21,21 @@ func _ready() -> void:
 	_update_panel_layout()
 	_refresh_text()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_update_panel_layout()
 
-	if _panel_root != null and _panel_root.visible:
-		_refresh_text()
+	if _panel_root == null:
+		return
+
+	if not _panel_root.visible:
+		return
+
+	_hud_refresh_cooldown_seconds -= delta
+	if _hud_refresh_cooldown_seconds > 0.0:
+		return
+
+	_hud_refresh_cooldown_seconds = HUD_REFRESH_INTERVAL_SECONDS
+	_refresh_text()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
@@ -92,6 +104,10 @@ func _toggle_panel() -> void:
 		return
 
 	_panel_root.visible = not _panel_root.visible
+	_hud_refresh_cooldown_seconds = 0.0
+
+	if _panel_root.visible:
+		_refresh_text()
 
 func _refresh_text() -> void:
 	if _label == null:
@@ -102,6 +118,11 @@ func _refresh_text() -> void:
 	var definition_report: Dictionary = _get_definition_report()
 	var calendar: Dictionary = boot_context.get("calendar", {})
 	var world_snapshot: Dictionary = _get_world_debug_snapshot()
+	var performance_snapshot: Dictionary = _get_performance_snapshot()
+
+	var camera_snapshot: Dictionary = world_snapshot.get("camera", {}) as Dictionary
+	var site_hints_state_text: String = "On" if bool(world_snapshot.get("debug_site_hints_visible", false)) else "Off"
+	var camera_center_cell_text: String = _build_cell_index_text(camera_snapshot.get("center_cell_index", Vector2i(-1, -1)))
 
 	var recent_phase_entries: Array = calendar.get("debug_recent_phase_entries", [])
 	var phase_duration_map: Dictionary = calendar.get("debug_last_tick_phase_durations_usec", {})
@@ -129,11 +150,26 @@ func _refresh_text() -> void:
 	var hovered_patch_text: String = _build_inspector_patch_text(hovered_entry)
 	var selected_patch_text: String = _build_inspector_patch_text(selected_entry)
 
+	var overlay_mode_id: String = str(world_snapshot.get("debug_overlay_mode_id", "off"))
+	var overlay_legend_text: String = _build_overlay_legend_text(overlay_mode_id)
+	var terrain_inspector_state_text: String = "On"
+	if not bool(world_snapshot.get("debug_terrain_inspector_visible", true)):
+		terrain_inspector_state_text = "Off"
+
 	_label.text = "\n".join([
-		"RCI — Branch 03 / Slice 03",
+		"RCI — Branch 04B / Slice 01",
 		"Build: %s" % build_info.get("build_version", DEFAULT_BUILD_VERSION),
 		"Engine: %s" % build_info.get("engine_version", "n/a"),
 		"Scene: %s" % build_info.get("current_scene_path", "n/a"),
+		"",
+		"FPS: %s" % str(performance_snapshot.get("fps", 0)),
+		"Frame Time: %s" % _format_milliseconds(float(performance_snapshot.get("process_time_msec", 0.0))),
+		"Physics Time: %s" % _format_milliseconds(float(performance_snapshot.get("physics_time_msec", 0.0))),
+		"Static Mem: %s" % _format_memory_mebibytes(int(performance_snapshot.get("static_memory_bytes", 0))),
+		"Objects: %s" % str(performance_snapshot.get("object_count", 0)),
+		"Nodes: %s" % str(performance_snapshot.get("node_count", 0)),
+		"Render Objects: %s" % str(performance_snapshot.get("render_object_count", 0)),
+		"Draw Calls: %s" % str(performance_snapshot.get("render_draw_calls", 0)),
 		"",
 		"Scenario: %s" % boot_context.get("scenario_id", "n/a"),
 		"Stage: %s" % boot_context.get("stage_id", "n/a"),
@@ -154,6 +190,17 @@ func _refresh_text() -> void:
 		"World Cells: %s" % str(world_snapshot.get("cell_count", 0)),
 		"World Chunks: %s" % str(world_snapshot.get("chunk_count", 0)),
 		"World Patches: %s" % str(world_snapshot.get("patch_count", 0)),
+		"Reveal Sources: %s" % str(world_snapshot.get("reveal_source_count", 0)),
+		"Terrain Objects: %s" % str(world_snapshot.get("authored_terrain_object_count", 0)),
+		"Generation Warnings: %s" % str(world_snapshot.get("generation_warning_count", 0)),
+		"Overlay Mode: %s" % _display_or_dash(overlay_mode_id),
+		"Overlay Legend:",
+		overlay_legend_text,
+		"Terrain Inspector: %s" % terrain_inspector_state_text,
+		"Site Hints: %s" % site_hints_state_text,
+		"Camera Zoom: %.2f" % float(camera_snapshot.get("zoom_scalar", 1.0)),
+		"Camera Band: %s" % _display_or_dash(str(camera_snapshot.get("zoom_band_id", ""))),
+		"Camera Cell: %s" % camera_center_cell_text,
 		"Focus Cells:",
 		world_focus_text,
 		"",
@@ -223,9 +270,13 @@ func _refresh_text() -> void:
 		"Def Errors: %s" % str(definition_report.get("error_count", 0)),
 		"",
 		"F3: toggle HUD",
-		"Mouse wheel: scroll HUD",
+		"F4: toggle terrain inspector",
+		"F5: toggle site hints",
+		"Mouse wheel: zoom camera or scroll HUD",
+		"Middle mouse drag / WASD / arrows: pan camera",
 		"Left click: select cell",
 		"Right click: clear selected cell",
+		"O / Shift+O: next/previous overlay",
 		"Space: pause/resume",
 		". : single-step",
 		"[ / ] : speed down/up",
@@ -420,6 +471,18 @@ func _get_world_debug_snapshot() -> Dictionary:
 	return {
 		"is_loaded": false,
 	}
+	
+func _get_performance_snapshot() -> Dictionary:
+	return {
+		"fps": int(Performance.get_monitor(Performance.TIME_FPS)),
+		"process_time_msec": float(Performance.get_monitor(Performance.TIME_PROCESS)) * 1000.0,
+		"physics_time_msec": float(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0,
+		"static_memory_bytes": int(Performance.get_monitor(Performance.MEMORY_STATIC)),
+		"object_count": int(Performance.get_monitor(Performance.OBJECT_COUNT)),
+		"node_count": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		"render_object_count": int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)),
+		"render_draw_calls": int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+	}
 
 func _build_world_focus_text(world_snapshot: Dictionary) -> String:
 	var focus_cells: Array = world_snapshot.get("focus_cells", [])
@@ -464,6 +527,16 @@ func _build_focus_cell_line(entry: Dictionary) -> String:
 		str(cell.get("is_buildable", false)),
 		poi_text,
 	]
+
+func _build_cell_index_text(cell_index_variant: Variant) -> String:
+	if not (cell_index_variant is Vector2i):
+		return "-"
+
+	var cell_index: Vector2i = cell_index_variant as Vector2i
+	if cell_index.x < 0 or cell_index.y < 0:
+		return "-"
+
+	return "(%s,%s)" % [cell_index.x, cell_index.y]
 
 func _build_string_list_text(values_variant: Variant) -> String:
 	var parts: Array[String] = []
@@ -616,3 +689,73 @@ func _build_summary_dict_text(summary_variant: Variant) -> String:
 		parts.append("%s=%s" % [key, str(value)])
 
 	return ", ".join(parts)
+
+func _format_milliseconds(value_msec: float) -> String:
+	return "%.2f ms" % value_msec
+
+func _format_memory_mebibytes(memory_bytes: int) -> String:
+	var memory_mebibytes: float = float(memory_bytes) / (1024.0 * 1024.0)
+	return "%.2f MiB" % memory_mebibytes
+	
+func _build_overlay_legend_text(overlay_mode_id: String) -> String:
+	var legend_lines: Array[String] = _build_overlay_legend_lines(overlay_mode_id)
+	if legend_lines.is_empty():
+		return "  - -"
+
+	return "\n".join(legend_lines)
+
+func _build_overlay_legend_lines(overlay_mode_id: String) -> Array[String]:
+	match overlay_mode_id:
+		"off":
+			return [
+				"  - overlay disabled",
+			]
+		"elevation":
+			return [
+				"  - low ground = cool dark tint",
+				"  - high ground = warm tan tint",
+			]
+		"drainage":
+			return [
+				"  - poor drainage = red/orange",
+				"  - moderate drainage = amber",
+				"  - good drainage = green",
+			]
+		"wetness":
+			return [
+				"  - dry = tan",
+				"  - damp = teal-green",
+				"  - wet = blue",
+			]
+		"vegetation":
+			return [
+				"  - none = bare muted tint",
+				"  - sparse / grass / brush / woodland = increasingly denser green tint",
+			]
+		"buildability":
+			return [
+				"  - buildable = green",
+				"  - not buildable = red",
+			]
+		"site_score":
+			return [
+				"  - red = weak site",
+				"  - amber = mixed / usable site",
+				"  - green = strong site",
+			]
+		"patch_boundaries":
+			return [
+				"  - blue outline = water patch",
+				"  - green outline = buildable patch",
+				"  - white outline = other patch",
+			]
+		"fog_memory":
+			return [
+				"  - visible = nearly clear",
+				"  - remembered = muted blue tint",
+				"  - hidden = dark obscuring tint",
+			]
+		_:
+			return [
+				"  - no legend available",
+			]

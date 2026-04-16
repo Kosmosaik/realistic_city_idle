@@ -6,6 +6,8 @@
 script = ExtResource("1")
 map_preset_id = "starter_map_balanced"
 fixture_id = "starter_map_balanced"
+world_width_cells = 128
+world_height_cells = 96
 point_of_interest_tags = PackedStringArray("water", "dry_ground", "wood", "stone")
 display_name = "Starter Map Balanced"
 description = "Balanced authored starter map fixture for the early MVP shell."

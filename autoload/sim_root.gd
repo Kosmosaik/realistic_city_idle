@@ -1,6 +1,7 @@
 extends Node
 
 const AUTHORED_MAP_LOADER_SCRIPT: Script = preload("res://scripts/runtime/world/authored_map_loader.gd")
+const WORLD_VISIBILITY_SERVICE_SCRIPT: Script = preload("res://scripts/runtime/world/world_visibility_service.gd")
 
 const DEFAULT_SCENARIO_ID: String = "scenario.dev.temperate_valley"
 const DEFAULT_STAGE_ID: String = "stage.lone_survivor"
@@ -10,6 +11,18 @@ const DEFAULT_SEASON_PROFILE_ID: String = "temperate_four_season_basic"
 const DEFAULT_SEED: int = 100001
 const INVALID_CELL_INDEX: Vector2i = Vector2i(-1, -1)
 
+const DEBUG_OVERLAY_MODE_IDS: Array[String] = [
+	"off",
+	"elevation",
+	"drainage",
+	"wetness",
+	"vegetation",
+	"buildability",
+	"site_score",
+	"patch_boundaries",
+	"fog_memory",
+]
+
 var scenario_id: String = DEFAULT_SCENARIO_ID
 var stage_id: String = DEFAULT_STAGE_ID
 var map_preset_id: String = DEFAULT_MAP_PRESET_ID
@@ -17,18 +30,26 @@ var worldgen_profile_id: String = DEFAULT_WORLDGEN_PROFILE_ID
 var season_profile_id: String = DEFAULT_SEASON_PROFILE_ID
 var seed: int = DEFAULT_SEED
 var seed_is_overridden: bool = false
+
 var world_root: Node = null
+var _world_visibility_service: WorldVisibilityService = null
 var world_state: WorldState = null
+
 var last_bootstrap_error: String = ""
 var last_world_load_error: String = ""
 
 var debug_hovered_cell_index: Vector2i = INVALID_CELL_INDEX
 var debug_selected_cell_index: Vector2i = INVALID_CELL_INDEX
+var debug_overlay_mode_id: String = "off"
+var debug_terrain_inspector_visible: bool = true
+var debug_site_hints_visible: bool = false
+
 
 func _ready() -> void:
 	var telemetry_service: Node = _telemetry_service()
 	if telemetry_service != null:
 		telemetry_service.call("log", "sim", "sim_root_ready", get_boot_context())
+
 
 func set_bootstrap_context(new_scenario_id: String, new_seed: int) -> void:
 	if new_scenario_id.strip_edges().is_empty():
@@ -52,6 +73,7 @@ func set_bootstrap_context(new_scenario_id: String, new_seed: int) -> void:
 	var telemetry_service: Node = _telemetry_service()
 	if telemetry_service != null:
 		telemetry_service.call("log", "sim", "bootstrap_context_updated", get_boot_context())
+
 
 func resolve_bootstrap_context_from_definitions() -> bool:
 	_clear_bootstrap_error()
@@ -145,74 +167,170 @@ func resolve_bootstrap_context_from_definitions() -> bool:
 
 	return true
 
+
 func build_world_state_from_active_definitions() -> bool:
 	_clear_world_load_error()
-	clear_world_state()
 
 	var definition_registry: Node = _definition_registry()
 	if definition_registry == null:
-		return _fail_world_load("DefinitionRegistry autoload is missing.")
+		return _fail_world_load("DefinitionRegistry missing.")
 
-	var map_preset_base_def: BaseDef = definition_registry.call(
+	if not definition_registry.has_method("get_definition"):
+		return _fail_world_load("DefinitionRegistry missing get_definition().")
+
+	var scenario_def: ScenarioDef = definition_registry.call(
+		"get_definition",
+		DefinitionTypes.TYPE_SCENARIO,
+		scenario_id
+	) as ScenarioDef
+	if scenario_def == null:
+		return _fail_world_load("Scenario definition not found: %s" % scenario_id)
+
+	var stage_def: StageDef = definition_registry.call(
+		"get_definition",
+		DefinitionTypes.TYPE_STAGE,
+		stage_id
+	) as StageDef
+	if stage_def == null:
+		return _fail_world_load("Stage definition not found: %s" % stage_id)
+
+	var map_preset_def: MapPresetDef = definition_registry.call(
 		"get_definition",
 		DefinitionTypes.TYPE_MAP_PRESET,
 		map_preset_id
-	) as BaseDef
-	var map_preset_def: MapPresetDef = map_preset_base_def as MapPresetDef
+	) as MapPresetDef
 	if map_preset_def == null:
-		return _fail_world_load("Map preset definition could not be resolved: %s" % map_preset_id)
+		return _fail_world_load("Map preset definition not found: %s" % map_preset_id)
 
-	var worldgen_profile_base_def: BaseDef = definition_registry.call(
+	var worldgen_profile_def: WorldgenProfileDef = definition_registry.call(
 		"get_definition",
 		DefinitionTypes.TYPE_WORLDGEN_PROFILE,
 		worldgen_profile_id
-	) as BaseDef
-	var worldgen_profile_def: WorldgenProfileDef = worldgen_profile_base_def as WorldgenProfileDef
+	) as WorldgenProfileDef
 	if worldgen_profile_def == null:
-		return _fail_world_load("Worldgen profile definition could not be resolved: %s" % worldgen_profile_id)
+		return _fail_world_load("Worldgen profile definition not found: %s" % worldgen_profile_id)
+
+	var season_profile_def: SeasonProfileDef = definition_registry.call(
+		"get_definition",
+		DefinitionTypes.TYPE_SEASON_PROFILE,
+		season_profile_id
+	) as SeasonProfileDef
+	if season_profile_def == null:
+		return _fail_world_load("Season profile definition not found: %s" % season_profile_id)
+
+	if not worldgen_profile_def.map_preset_ids.has(map_preset_id):
+		return _fail_world_load(
+			"Map preset '%s' is not allowed by worldgen profile '%s'." % [
+				map_preset_id,
+				worldgen_profile_id,
+			]
+		)
+
+	if map_preset_def.fixture_id.strip_edges().is_empty():
+		return _fail_world_load(
+			"Map preset '%s' is missing fixture_id." % map_preset_def.get_definition_id()
+		)
 
 	var authored_map_loader: AuthoredMapLoader = AUTHORED_MAP_LOADER_SCRIPT.new() as AuthoredMapLoader
-	var load_result: Dictionary = authored_map_loader.build_world_state(
+	if authored_map_loader == null:
+		return _fail_world_load("Failed to create AuthoredMapLoader.")
+
+	var built_world_state: WorldState = authored_map_loader.load_world_state_from_fixture(
 		map_preset_def,
 		worldgen_profile_def,
-		seed
+		_time_service()
 	)
+	if built_world_state == null:
+		return _fail_world_load(
+			"Failed to build world state from fixture_id: %s" % map_preset_def.fixture_id
+		)
 
-	if not bool(load_result.get("ok", false)):
-		return _fail_world_load(str(load_result.get("error", "Unknown world load error.")))
+	built_world_state.seed = seed
+	if built_world_state.fixture_id.strip_edges().is_empty():
+		built_world_state.fixture_id = map_preset_def.fixture_id
 
-	world_state = load_result.get("world_state", null) as WorldState
-	if world_state == null:
-		return _fail_world_load("AuthoredMapLoader returned success without a WorldState.")
+	built_world_state.world_id = "%s:%d" % [
+		built_world_state.fixture_id,
+		seed
+	]
+	built_world_state.primary_terrain_profile_id = worldgen_profile_def.get_definition_id()
 
-	var telemetry_service: Node = _telemetry_service()
-	if telemetry_service != null:
-		telemetry_service.call("log", "world", "world_state_loaded", {
-			"world_id": world_state.world_id,
-			"fixture_id": world_state.fixture_id,
-			"cell_count": world_state.get_cell_count(),
-			"chunk_count": world_state.get_chunk_count(),
-			"patch_count": world_state.get_patch_count(),
-		})
+	world_state = built_world_state
+	debug_hovered_cell_index = INVALID_CELL_INDEX
+	debug_selected_cell_index = INVALID_CELL_INDEX
+
+	_bind_world_services(world_state)
 
 	return true
 
+
 func clear_world_state() -> void:
+	_unbind_world_services()
 	world_state = null
 	debug_hovered_cell_index = INVALID_CELL_INDEX
 	debug_selected_cell_index = INVALID_CELL_INDEX
+	_clear_world_load_error()
+
+
+func _bind_world_services(bound_world_state: WorldState) -> void:
+	_unbind_world_services()
+
+	if bound_world_state == null:
+		return
+
+	var time_service: Node = _time_service()
+	_world_visibility_service = WORLD_VISIBILITY_SERVICE_SCRIPT.new() as WorldVisibilityService
+	if _world_visibility_service == null:
+		return
+
+	_world_visibility_service.bind_world_state(bound_world_state)
+
+	if time_service != null and time_service.has_method("register_phase_listener"):
+		time_service.call(
+			"register_phase_listener",
+			"phase.visibility_refresh",
+			_world_visibility_service,
+			"_on_visibility_refresh_phase"
+		)
+
+	var initial_tick_index: int = 0
+	if time_service != null:
+		initial_tick_index = int(time_service.get("tick_index"))
+
+	_world_visibility_service.refresh_now(initial_tick_index)
+
+
+func _unbind_world_services() -> void:
+	var time_service: Node = _time_service()
+
+	if _world_visibility_service != null and time_service != null and time_service.has_method("unregister_phase_listener"):
+		time_service.call(
+			"unregister_phase_listener",
+			"phase.visibility_refresh",
+			_world_visibility_service,
+			"_on_visibility_refresh_phase"
+		)
+
+	if _world_visibility_service != null:
+		_world_visibility_service.unbind_world_state()
+
+	_world_visibility_service = null
+
 
 func has_world_state() -> bool:
 	return world_state != null
 
+
 func get_world_state() -> WorldState:
 	return world_state
+
 
 func get_world_cell_index_at_world_position(world_position: Vector2) -> Vector2i:
 	if world_state == null:
 		return INVALID_CELL_INDEX
 
 	return world_state.world_position_to_cell_index(world_position)
+
 
 func get_world_cell_debug_snapshot(cell_index: Vector2i) -> Dictionary:
 	if world_state == null:
@@ -223,12 +341,14 @@ func get_world_cell_debug_snapshot(cell_index: Vector2i) -> Dictionary:
 
 	return world_state.get_cell_debug_snapshot(cell_index)
 
+
 func get_world_cell_debug_snapshot_at_world_position(world_position: Vector2) -> Dictionary:
 	if world_state == null:
 		return {}
 
 	return world_state.get_cell_debug_snapshot_at_world_position(world_position)
-	
+
+
 func get_world_patch_debug_snapshots_for_cell(cell_index: Vector2i) -> Array:
 	if world_state == null:
 		return []
@@ -238,39 +358,140 @@ func get_world_patch_debug_snapshots_for_cell(cell_index: Vector2i) -> Array:
 
 	return world_state.get_patch_debug_snapshots_for_cell(cell_index)
 
+
 func get_world_patch_debug_snapshots_at_world_position(world_position: Vector2) -> Array:
 	if world_state == null:
 		return []
 
 	return world_state.get_patch_debug_snapshots_at_world_position(world_position)
 
+
 func set_debug_hovered_cell_from_world_position(world_position: Vector2) -> void:
 	debug_hovered_cell_index = get_world_cell_index_at_world_position(world_position)
+
 
 func set_debug_selected_cell_from_world_position(world_position: Vector2) -> void:
 	debug_selected_cell_index = get_world_cell_index_at_world_position(world_position)
 
+
 func clear_debug_selected_cell() -> void:
 	debug_selected_cell_index = INVALID_CELL_INDEX
 
+
+func get_debug_hovered_cell_index() -> Vector2i:
+	return debug_hovered_cell_index
+
+
+func get_debug_selected_cell_index() -> Vector2i:
+	return debug_selected_cell_index
+
+
+func get_debug_overlay_mode_id() -> String:
+	return debug_overlay_mode_id
+
+
+func get_debug_overlay_mode_ids() -> Array[String]:
+	return DEBUG_OVERLAY_MODE_IDS
+
+
+func set_debug_overlay_mode_id(new_overlay_mode_id: String) -> void:
+	var trimmed_overlay_mode_id: String = new_overlay_mode_id.strip_edges()
+	if trimmed_overlay_mode_id.is_empty():
+		return
+
+	if not DEBUG_OVERLAY_MODE_IDS.has(trimmed_overlay_mode_id):
+		return
+
+	debug_overlay_mode_id = trimmed_overlay_mode_id
+
+
+func cycle_debug_overlay_mode(direction: int = 1) -> String:
+	var mode_count: int = DEBUG_OVERLAY_MODE_IDS.size()
+	if mode_count <= 0:
+		debug_overlay_mode_id = "off"
+		return debug_overlay_mode_id
+
+	var current_index: int = DEBUG_OVERLAY_MODE_IDS.find(debug_overlay_mode_id)
+	if current_index < 0:
+		current_index = 0
+
+	var direction_step: int = 1
+	if direction < 0:
+		direction_step = -1
+
+	var next_index: int = posmod(current_index + direction_step, mode_count)
+	debug_overlay_mode_id = DEBUG_OVERLAY_MODE_IDS[next_index]
+	return debug_overlay_mode_id
+
+
+func is_debug_terrain_inspector_visible() -> bool:
+	return debug_terrain_inspector_visible
+
+
+func set_debug_terrain_inspector_visible(is_visible: bool) -> void:
+	debug_terrain_inspector_visible = is_visible
+
+
+func toggle_debug_terrain_inspector_visible() -> bool:
+	debug_terrain_inspector_visible = not debug_terrain_inspector_visible
+	return debug_terrain_inspector_visible
+
+
+func is_debug_site_hints_visible() -> bool:
+	return debug_site_hints_visible
+
+
+func set_debug_site_hints_visible(is_visible: bool) -> void:
+	debug_site_hints_visible = is_visible
+
+
+func toggle_debug_site_hints_visible() -> bool:
+	debug_site_hints_visible = not debug_site_hints_visible
+	return debug_site_hints_visible
+
+
 func get_world_debug_snapshot() -> Dictionary:
+	var camera_snapshot: Dictionary = {}
+	var resolved_world_root: Node = world_root
+
+	if resolved_world_root == null:
+		var current_scene: Node = get_tree().current_scene
+		if current_scene != null:
+			resolved_world_root = current_scene.get_node_or_null("WorldRoot")
+
+	if resolved_world_root != null and resolved_world_root.has_method("get_camera_debug_snapshot"):
+		camera_snapshot = resolved_world_root.call("get_camera_debug_snapshot")
+
 	if world_state == null:
 		return {
 			"is_loaded": false,
+			"debug_overlay_mode_id": debug_overlay_mode_id,
+			"debug_terrain_inspector_visible": debug_terrain_inspector_visible,
+			"debug_site_hints_visible": debug_site_hints_visible,
+			"camera": camera_snapshot,
+			"focus_cells": [],
 			"hovered_cell": {},
 			"selected_cell": {},
 		}
 
-	var snapshot: Dictionary = world_state.get_debug_snapshot()
+	var snapshot: Dictionary = world_state.get_world_debug_snapshot()
+	snapshot["debug_overlay_mode_id"] = debug_overlay_mode_id
+	snapshot["debug_terrain_inspector_visible"] = debug_terrain_inspector_visible
+	snapshot["debug_site_hints_visible"] = debug_site_hints_visible
+	snapshot["camera"] = camera_snapshot
+	snapshot["focus_cells"] = snapshot.get("debug_focus_entries", [])
 	snapshot["hovered_cell"] = _build_debug_inspector_entry("hovered", debug_hovered_cell_index)
 	snapshot["selected_cell"] = _build_debug_inspector_entry("selected", debug_selected_cell_index)
 	return snapshot
 
+
 func get_last_bootstrap_error() -> String:
 	return last_bootstrap_error
 
+
 func get_last_world_load_error() -> String:
 	return last_world_load_error
+
 
 func get_boot_context() -> Dictionary:
 	var calendar: Dictionary = {}
@@ -289,6 +510,7 @@ func get_boot_context() -> Dictionary:
 		"calendar": calendar,
 	}
 
+
 func register_world_root(node: Node) -> void:
 	world_root = node
 
@@ -302,6 +524,7 @@ func register_world_root(node: Node) -> void:
 			"scene_file_path": node.scene_file_path,
 			"world_state_loaded": has_world_state(),
 		})
+
 
 func unregister_world_root(node: Node) -> void:
 	if world_root != node:
@@ -318,6 +541,7 @@ func unregister_world_root(node: Node) -> void:
 		telemetry_service.call("log", "world", "world_unregistered", {
 			"scene_file_path": node.scene_file_path,
 		})
+
 
 func _build_debug_inspector_entry(label: String, cell_index: Vector2i) -> Dictionary:
 	if world_state == null:
@@ -338,6 +562,7 @@ func _build_debug_inspector_entry(label: String, cell_index: Vector2i) -> Dictio
 		"patches": patch_snapshots,
 	}
 
+
 func _definitions_are_loaded() -> bool:
 	var definition_registry: Node = _definition_registry()
 	if definition_registry == null:
@@ -350,30 +575,38 @@ func _definitions_are_loaded() -> bool:
 	var loaded_count_total: int = int(validation_report.get("loaded_count_total", 0))
 	return loaded_count_total > 0
 
+
 func _fail_bootstrap(message: String) -> bool:
 	last_bootstrap_error = message
 	push_error("SimRoot: %s" % message)
 	return false
 
+
 func _clear_bootstrap_error() -> void:
 	last_bootstrap_error = ""
+
 
 func _fail_world_load(message: String) -> bool:
 	last_world_load_error = message
 	push_error("SimRoot: %s" % message)
 	return false
 
+
 func _clear_world_load_error() -> void:
 	last_world_load_error = ""
+
 
 func _definition_registry() -> Node:
 	return get_node_or_null("/root/DefinitionRegistry")
 
+
 func _event_bus() -> Node:
 	return get_node_or_null("/root/EventBus")
 
+
 func _telemetry_service() -> Node:
 	return get_node_or_null("/root/TelemetryService")
+
 
 func _time_service() -> Node:
 	return get_node_or_null("/root/TimeService")
