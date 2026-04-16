@@ -627,6 +627,7 @@ func _build_inspector_patch_text(entry_variant: Variant) -> String:
 
 		var patch: Dictionary = patch_variant as Dictionary
 		var poi_text: String = _build_string_list_text(patch.get("point_of_interest_tags", []))
+		var source_tag_text: String = _build_string_list_text(patch.get("source_tags", []))
 		var resource_text: String = _build_summary_dict_text(patch.get("resource_summary", {}))
 		var hazard_text: String = _build_summary_dict_text(patch.get("hazard_summary", {}))
 
@@ -637,6 +638,13 @@ func _build_inspector_patch_text(entry_variant: Variant) -> String:
 				str(patch.get("area_cell_count", 0)),
 				_display_or_dash(str(patch.get("reveal_state", ""))),
 				_format_float_text(float(patch.get("site_score", 0.0))),
+			]
+		)
+
+		lines.append(
+			"    source=%s | tags=%s" % [
+				_display_or_dash(str(patch.get("source_stamp_id", ""))),
+				source_tag_text,
 			]
 		)
 

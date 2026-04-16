@@ -27,9 +27,11 @@ func load_world_state_from_fixture(
 	if root.is_empty():
 		return null
 
-	var validation_error: String = _validate_root(root)
-	if not validation_error.is_empty():
-		push_error("AuthoredMapLoader: %s" % validation_error)
+	var validation_errors: Array[String] = _validate_root(root)
+	if not validation_errors.is_empty():
+		push_error(
+			"AuthoredMapLoader:\n- %s" % "\n- ".join(validation_errors)
+		)
 		return null
 
 	var world_width_cells: int = int(root.get("world_width_cells", 0))
@@ -80,7 +82,6 @@ func load_world_state_from_fixture(
 
 	return world_state
 
-
 func _read_fixture_root(fixture_path: String) -> Dictionary:
 	if not FileAccess.file_exists(fixture_path):
 		push_error("AuthoredMapLoader: Fixture file does not exist: %s" % fixture_path)
@@ -99,107 +100,195 @@ func _read_fixture_root(fixture_path: String) -> Dictionary:
 	return parsed_variant as Dictionary
 
 
-func _validate_root(root: Dictionary) -> String:
-	if str(root.get("fixture_id", "")).strip_edges().is_empty():
-		return "Fixture is missing fixture_id."
+func _validate_root(root: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
 
-	var world_width_cells: int = int(root.get("world_width_cells", 0))
-	var world_height_cells: int = int(root.get("world_height_cells", 0))
-	var cell_size_pixels: int = int(root.get("cell_size_pixels", DEFAULT_CELL_SIZE_PIXELS))
-	var chunk_size_cells: int = int(root.get("chunk_size_cells", DEFAULT_CHUNK_SIZE_CELLS))
+	if not root.has("world_width_cells"):
+		errors.append("Missing world_width_cells.")
+	if not root.has("world_height_cells"):
+		errors.append("Missing world_height_cells.")
+	if not root.has("cell_size_pixels"):
+		errors.append("Missing cell_size_pixels.")
+	if not root.has("default_cell"):
+		errors.append("Missing default_cell.")
 
-	if world_width_cells <= 0:
-		return "Fixture world_width_cells must be > 0."
+	if root.has("stamps"):
+		var stamps_variant: Variant = root.get("stamps", [])
+		if typeof(stamps_variant) != TYPE_ARRAY:
+			errors.append("'stamps' must be an array when present.")
+		else:
+			var stamps: Array = stamps_variant as Array
+			for stamp_variant: Variant in stamps:
+				if typeof(stamp_variant) != TYPE_DICTIONARY:
+					errors.append("Each stamp must be a dictionary.")
+					continue
 
-	if world_height_cells <= 0:
-		return "Fixture world_height_cells must be > 0."
+				var stamp_data: Dictionary = stamp_variant as Dictionary
+				var stamp_id: String = str(stamp_data.get("stamp_id", "")).strip_edges()
+				if stamp_id.is_empty():
+					errors.append("Each stamp needs a non-empty stamp_id.")
 
-	if cell_size_pixels <= 0:
-		return "Fixture cell_size_pixels must be > 0."
+				if not _stamp_has_supported_footprint(stamp_data):
+					errors.append(
+						"Stamp '%s' needs either rect [x, y, w, h] or a non-empty cells [[x, y], ...] footprint."
+						% stamp_id
+					)
 
-	if chunk_size_cells <= 0:
-		return "Fixture chunk_size_cells must be > 0."
+				if stamp_data.has("rect"):
+					var rect_variant: Variant = stamp_data.get("rect", [])
+					if typeof(rect_variant) != TYPE_ARRAY:
+						errors.append("Stamp '%s' rect must be an array." % stamp_id)
+					else:
+						var rect_array: Array = rect_variant as Array
+						if rect_array.size() != 4:
+							errors.append("Stamp '%s' rect must have 4 integers." % stamp_id)
 
-	if not (root.get("default_cell", {}) is Dictionary):
-		return "Fixture default_cell must be a Dictionary."
+				if stamp_data.has("cells"):
+					var cells_variant: Variant = stamp_data.get("cells", [])
+					if typeof(cells_variant) != TYPE_ARRAY:
+						errors.append("Stamp '%s' cells must be an array." % stamp_id)
+					else:
+						var cells_array: Array = cells_variant as Array
+						if cells_array.is_empty():
+							errors.append("Stamp '%s' cells must not be empty." % stamp_id)
+						for cell_variant: Variant in cells_array:
+							if typeof(cell_variant) != TYPE_ARRAY:
+								errors.append("Stamp '%s' cells entries must be [x, y] arrays." % stamp_id)
+								break
+							var cell_array: Array = cell_variant as Array
+							if cell_array.size() != 2:
+								errors.append("Stamp '%s' cells entries must have exactly 2 values." % stamp_id)
+								break
 
-	if not (root.get("stamps", []) is Array):
-		return "Fixture stamps must be an Array."
+	if root.has("reveal_sources"):
+		var reveal_sources_variant: Variant = root.get("reveal_sources", [])
+		if typeof(reveal_sources_variant) != TYPE_ARRAY:
+			errors.append("'reveal_sources' must be an array when present.")
+		else:
+			var reveal_sources: Array = reveal_sources_variant as Array
+			for source_variant: Variant in reveal_sources:
+				if typeof(source_variant) != TYPE_DICTIONARY:
+					errors.append("Each reveal source must be a dictionary.")
+					continue
+				var source_data: Dictionary = source_variant as Dictionary
+				var source_id: String = str(source_data.get("source_id", "")).strip_edges()
+				if source_id.is_empty():
+					errors.append("Each reveal source needs a non-empty source_id.")
+				var cell_variant: Variant = source_data.get("cell", [])
+				if typeof(cell_variant) != TYPE_ARRAY or (cell_variant as Array).size() != 2:
+					errors.append("Reveal source '%s' requires cell [x, y]." % source_id)
 
-	var stamps: Array = root.get("stamps", [])
-	for stamp_index: int in range(stamps.size()):
-		var stamp_variant: Variant = stamps[stamp_index]
-		if not (stamp_variant is Dictionary):
-			return "Fixture stamp at index %d was not a Dictionary." % stamp_index
+	if root.has("terrain_objects"):
+		var terrain_objects_variant: Variant = root.get("terrain_objects", [])
+		if typeof(terrain_objects_variant) != TYPE_ARRAY:
+			errors.append("'terrain_objects' must be an array when present.")
+		else:
+			var terrain_objects: Array = terrain_objects_variant as Array
+			for object_variant: Variant in terrain_objects:
+				if typeof(object_variant) != TYPE_DICTIONARY:
+					errors.append("Each terrain object must be a dictionary.")
+					continue
+				var object_data: Dictionary = object_variant as Dictionary
+				var object_id: String = str(object_data.get("object_id", "")).strip_edges()
+				if object_id.is_empty():
+					errors.append("Each terrain object needs a non-empty object_id.")
+				var cell_variant: Variant = object_data.get("cell", [])
+				if typeof(cell_variant) != TYPE_ARRAY or (cell_variant as Array).size() != 2:
+					errors.append("Terrain object '%s' requires cell [x, y]." % object_id)
 
-		var stamp_data: Dictionary = stamp_variant as Dictionary
-		var stamp_id: String = str(stamp_data.get("stamp_id", "")).strip_edges()
-		if stamp_id.is_empty():
-			return "Fixture stamp at index %d is missing stamp_id." % stamp_index
+	return errors
 
-		var rect_values: Array = stamp_data.get("rect", [])
-		if rect_values.size() != 4:
-			return "Fixture stamp '%s' must have rect = [x, y, width, height]." % stamp_id
+func _stamp_has_supported_footprint(stamp_data: Dictionary) -> bool:
+	if stamp_data.has("cells"):
+		var cells_variant: Variant = stamp_data.get("cells", [])
+		if typeof(cells_variant) == TYPE_ARRAY and not (cells_variant as Array).is_empty():
+			return true
 
-	if root.has("reveal_sources") and not (root.get("reveal_sources", []) is Array):
-		return "Fixture reveal_sources must be an Array."
+	if stamp_data.has("rect"):
+		var rect_variant: Variant = stamp_data.get("rect", [])
+		if typeof(rect_variant) == TYPE_ARRAY and (rect_variant as Array).size() == 4:
+			return true
 
-	var reveal_sources: Array = root.get("reveal_sources", [])
-	for reveal_source_index: int in range(reveal_sources.size()):
-		var reveal_source_variant: Variant = reveal_sources[reveal_source_index]
-		if not (reveal_source_variant is Dictionary):
-			return "Fixture reveal_source at index %d was not a Dictionary." % reveal_source_index
+	return false
 
-		var reveal_source_data: Dictionary = reveal_source_variant as Dictionary
-		var source_id: String = str(reveal_source_data.get("source_id", "")).strip_edges()
-		if source_id.is_empty():
-			return "Fixture reveal_source at index %d is missing source_id." % reveal_source_index
 
-		var source_cell_values: Variant = reveal_source_data.get(
-			"cell",
-			reveal_source_data.get("center_cell", [])
-		)
-		if not (source_cell_values is Array):
-			return "Fixture reveal_source '%s' must define cell = [x, y]." % source_id
+func _resolve_stamp_cell_indices(stamp_data: Dictionary) -> Array[Vector2i]:
+	if stamp_data.has("cells"):
+		var parsed_cells: Array[Vector2i] = _parse_cell_index_list_from_stamp(stamp_data)
+		if not parsed_cells.is_empty():
+			return parsed_cells
 
-		var source_cell_array: Array = source_cell_values as Array
-		if source_cell_array.size() != 2:
-			return "Fixture reveal_source '%s' must define cell = [x, y]." % source_id
+	if stamp_data.has("rect"):
+		var rect_array: Array = stamp_data.get("rect", []) as Array
+		if rect_array.size() == 4:
+			var stamp_rect := Rect2i(
+				Vector2i(int(rect_array[0]), int(rect_array[1])),
+				Vector2i(int(rect_array[2]), int(rect_array[3]))
+			)
+			return _collect_rect_stamp_cells(stamp_rect)
 
-	if root.has("terrain_objects") and not (root.get("terrain_objects", []) is Array):
-		return "Fixture terrain_objects must be an Array."
+	return []
 
-	var terrain_objects: Array = root.get("terrain_objects", [])
-	for terrain_object_index: int in range(terrain_objects.size()):
-		var terrain_object_variant: Variant = terrain_objects[terrain_object_index]
-		if not (terrain_object_variant is Dictionary):
-			return "Fixture terrain_object at index %d was not a Dictionary." % terrain_object_index
 
-		var terrain_object_data: Dictionary = terrain_object_variant as Dictionary
-		var object_id: String = str(terrain_object_data.get("object_id", "")).strip_edges()
-		if object_id.is_empty():
-			return "Fixture terrain_object at index %d is missing object_id." % terrain_object_index
+func _collect_rect_stamp_cells(stamp_rect: Rect2i) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var end_x: int = stamp_rect.position.x + stamp_rect.size.x
+	var end_y: int = stamp_rect.position.y + stamp_rect.size.y
 
-		var object_type: String = str(terrain_object_data.get("object_type", "")).strip_edges()
-		if object_type.is_empty():
-			return "Fixture terrain_object '%s' is missing object_type." % object_id
+	for y: int in range(stamp_rect.position.y, end_y):
+		for x: int in range(stamp_rect.position.x, end_x):
+			result.append(Vector2i(x, y))
 
-		var placement_family: String = str(
-			terrain_object_data.get("placement_family", "")
-		).strip_edges()
-		if placement_family.is_empty():
-			return "Fixture terrain_object '%s' is missing placement_family." % object_id
+	return result
 
-		var object_cell_values: Variant = terrain_object_data.get("cell", [])
-		if not (object_cell_values is Array):
-			return "Fixture terrain_object '%s' must define cell = [x, y]." % object_id
 
-		var object_cell_array: Array = object_cell_values as Array
-		if object_cell_array.size() != 2:
-			return "Fixture terrain_object '%s' must define cell = [x, y]." % object_id
+func _parse_cell_index_list_from_stamp(stamp_data: Dictionary) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var seen_keys: Dictionary = {}
 
-	return ""
+	var cells_variant: Variant = stamp_data.get("cells", [])
+	if typeof(cells_variant) != TYPE_ARRAY:
+		return result
 
+	var cells_array: Array = cells_variant as Array
+	for cell_variant: Variant in cells_array:
+		if typeof(cell_variant) != TYPE_ARRAY:
+			continue
+
+		var cell_array: Array = cell_variant as Array
+		if cell_array.size() != 2:
+			continue
+
+		var cell_index := Vector2i(int(cell_array[0]), int(cell_array[1]))
+		var cell_key: String = "%s,%s" % [cell_index.x, cell_index.y]
+		if seen_keys.has(cell_key):
+			continue
+
+		seen_keys[cell_key] = true
+		result.append(cell_index)
+
+	return result
+
+
+func _build_patch_bounds_from_cells(cell_indices: Array[Vector2i]) -> Rect2i:
+	if cell_indices.is_empty():
+		return Rect2i()
+
+	var min_x: int = cell_indices[0].x
+	var min_y: int = cell_indices[0].y
+	var max_x: int = cell_indices[0].x
+	var max_y: int = cell_indices[0].y
+
+	for cell_index: Vector2i in cell_indices:
+		min_x = mini(min_x, cell_index.x)
+		min_y = mini(min_y, cell_index.y)
+		max_x = maxi(max_x, cell_index.x)
+		max_y = maxi(max_y, cell_index.y)
+
+	return Rect2i(
+		Vector2i(min_x, min_y),
+		Vector2i(max_x - min_x + 1, max_y - min_y + 1)
+	)
 
 func _create_default_cells(world_state: WorldState, default_cell_values: Dictionary) -> void:
 	for y: int in range(world_state.world_height_cells):
@@ -216,64 +305,63 @@ func _create_default_cells(world_state: WorldState, default_cell_values: Diction
 
 
 func _apply_stamps(world_state: WorldState, stamps: Array) -> bool:
-	for stamp_index: int in range(stamps.size()):
-		var stamp_variant: Variant = stamps[stamp_index]
+	for stamp_variant: Variant in stamps:
 		if not (stamp_variant is Dictionary):
 			continue
 
 		var stamp_data: Dictionary = stamp_variant as Dictionary
 		var stamp_id: String = str(stamp_data.get("stamp_id", "")).strip_edges()
-		var stamp_rect: Rect2i = _variant_to_rect2i(stamp_data.get("rect", []))
-		if stamp_rect.size.x <= 0 or stamp_rect.size.y <= 0:
-			push_error("AuthoredMapLoader: Stamp '%s' had invalid rect." % stamp_id)
-			return false
-
-		_record_visibility_paint_warning_if_needed(world_state, stamp_id, stamp_data)
-
 		var stamp_tags: PackedStringArray = _variant_to_packed_string_array(
-			stamp_data.get("point_of_interest_tags", [])
+			stamp_data.get("source_tags", [])
 		)
 
-		var create_patch: bool = bool(stamp_data.get("create_patch", true))
-		var patch_state: WorldPatchState = null
-		if create_patch:
-			patch_state = _build_patch_state_from_stamp(stamp_id, stamp_data, stamp_rect, stamp_tags)
-			world_state.add_patch(patch_state)
+		var resolved_cell_indices: Array[Vector2i] = _resolve_stamp_cell_indices(stamp_data)
+		var applied_cell_indices: Array[Vector2i] = []
+
+		for stamp_cell_index: Vector2i in resolved_cell_indices:
+			if not world_state.is_cell_index_in_bounds(stamp_cell_index):
+				continue
+			applied_cell_indices.append(stamp_cell_index)
+
+		if applied_cell_indices.is_empty():
+			world_state.add_generation_warning(
+				"Stamp '%s' resolved to no in-bounds cells and was skipped." % stamp_id
+			)
+			continue
+
+		if applied_cell_indices.size() != resolved_cell_indices.size():
+			world_state.add_generation_warning(
+				"Stamp '%s' included out-of-bounds cells; only in-bounds cells were applied." % stamp_id
+			)
+
+		var patch_state: WorldPatchState = _build_patch_state_from_stamp(
+			stamp_id,
+			stamp_data,
+			applied_cell_indices,
+			stamp_tags
+		)
 
 		var cell_apply_values: Dictionary = _build_cell_apply_values(stamp_data)
-		var stamp_zone_id: String = str(stamp_data.get("zone_stamp_id", "")).strip_edges()
 
-		var x_start: int = max(stamp_rect.position.x, 0)
-		var y_start: int = max(stamp_rect.position.y, 0)
-		var x_end: int = min(stamp_rect.position.x + stamp_rect.size.x, world_state.world_width_cells)
-		var y_end: int = min(stamp_rect.position.y + stamp_rect.size.y, world_state.world_height_cells)
+		for stamp_cell_index: Vector2i in applied_cell_indices:
+			var cell_state: WorldCellState = world_state.get_cell(stamp_cell_index)
+			if cell_state == null:
+				continue
 
-		for y: int in range(y_start, y_end):
-			for x: int in range(x_start, x_end):
-				var cell_index: Vector2i = Vector2i(x, y)
-				var cell_state: WorldCellState = world_state.get_cell(cell_index)
-				if cell_state == null:
-					continue
+			cell_state.apply_values(cell_apply_values)
+			cell_state.zone_stamp_id = stamp_id
 
-				cell_state.apply_values(cell_apply_values)
+			if not patch_state.patch_id.is_empty():
+				var updated_patch_ids: PackedStringArray = cell_state.patch_ids
+				if updated_patch_ids.find(patch_state.patch_id) == -1:
+					updated_patch_ids.append(patch_state.patch_id)
+					cell_state.patch_ids = updated_patch_ids
 
-				if not stamp_zone_id.is_empty():
-					cell_state.zone_stamp_id = stamp_zone_id
-
-				if not stamp_tags.is_empty():
-					cell_state.point_of_interest_tags = _merge_string_arrays(
-						cell_state.point_of_interest_tags,
-						stamp_tags
-					)
-
-				if patch_state != null:
-					cell_state.patch_ids = _merge_string_arrays(
-						cell_state.patch_ids,
-						PackedStringArray([patch_state.patch_id])
-					)
+		_record_visibility_paint_warning_if_needed(world_state, stamp_id, stamp_data)
+		patch_state.finalize_from_world_state(world_state)
+		world_state.add_patch(patch_state)
 
 	return true
-
 
 func _build_cell_apply_values(stamp_data: Dictionary) -> Dictionary:
 	var cell_apply_values: Dictionary = {}
@@ -303,57 +391,58 @@ func _build_cell_apply_values(stamp_data: Dictionary) -> Dictionary:
 		if stamp_data.has(key):
 			cell_apply_values[key] = stamp_data.get(key)
 
-	return cell_apply_values
+	# Map authored stamp POI tags into the cell field name used by WorldCellState.
+	if stamp_data.has("poi_tags"):
+		cell_apply_values["point_of_interest_tags"] = stamp_data.get("poi_tags", [])
+	elif stamp_data.has("point_of_interest_tags"):
+		cell_apply_values["point_of_interest_tags"] = stamp_data.get("point_of_interest_tags", [])
 
+	return cell_apply_values
 
 func _build_patch_state_from_stamp(
 	stamp_id: String,
 	stamp_data: Dictionary,
-	stamp_rect: Rect2i,
+	cell_indices: Array[Vector2i],
 	stamp_tags: PackedStringArray
 ) -> WorldPatchState:
-	var patch_state: WorldPatchState = WorldPatchState.new()
+	var patch_state := WorldPatchState.new()
+	var patch_bounds: Rect2i = _build_patch_bounds_from_cells(cell_indices)
 
-	var patch_type: String = str(stamp_data.get("patch_type", "authored_rect")).strip_edges()
-	if patch_type.is_empty():
-		patch_type = "authored_rect"
-
-	patch_state.patch_id = "patch.%s" % stamp_id
-	patch_state.patch_type = patch_type
+	patch_state.patch_id = stamp_id
+	patch_state.patch_type = "authored_cells" if stamp_data.has("cells") else "authored_rect"
 	patch_state.source_stamp_id = stamp_id
-	patch_state.rect_position = stamp_rect.position
-	patch_state.rect_size = stamp_rect.size
-	patch_state.set_point_of_interest_tags(stamp_tags)
+	patch_state.set_source_tags(stamp_tags)
+	patch_state.rect_position = patch_bounds.position
+	patch_state.rect_size = patch_bounds.size
 
-	patch_state.landform_type = str(stamp_data.get("landform_type", ""))
-	patch_state.surface_water_type = str(stamp_data.get("surface_water_type", ""))
-	patch_state.drainage_class = str(stamp_data.get("drainage_class", ""))
-	patch_state.wetness_tendency = str(stamp_data.get("wetness_tendency", ""))
-	patch_state.vegetation_cover_class = str(stamp_data.get("vegetation_cover_class", ""))
+	for cell_index: Vector2i in cell_indices:
+		patch_state.add_cell_index(cell_index)
+		patch_state.add_cell_key(_build_cell_key(cell_index))
+
+	var point_of_interest_tags: PackedStringArray = _variant_to_packed_string_array(
+		stamp_data.get("poi_tags", [])
+	)
+	if point_of_interest_tags.is_empty() and stamp_data.has("point_of_interest_tags"):
+		point_of_interest_tags = _variant_to_packed_string_array(
+			stamp_data.get("point_of_interest_tags", [])
+		)
+	patch_state.set_point_of_interest_tags(point_of_interest_tags)
+
+	# Keep the simple patch summary fields populated from authored content.
+	patch_state.landform_type = str(stamp_data.get("landform_type", "")).strip_edges()
+	patch_state.surface_water_type = str(stamp_data.get("surface_water_type", "none")).strip_edges()
+	patch_state.drainage_class = str(stamp_data.get("drainage_class", "")).strip_edges()
+	patch_state.wetness_tendency = str(stamp_data.get("wetness_tendency", "")).strip_edges()
+	patch_state.vegetation_cover_class = str(
+		stamp_data.get("vegetation_cover_class", "")
+	).strip_edges()
 	patch_state.is_buildable = bool(stamp_data.get("is_buildable", false))
-
-	patch_state.dominant_landform_type = patch_state.landform_type
-	patch_state.dominant_vegetation_cover_class = patch_state.vegetation_cover_class
-	patch_state.dominant_drainage_class = patch_state.drainage_class
 
 	if stamp_data.has("site_score"):
 		patch_state.site_score = float(stamp_data.get("site_score", 0.0))
 		patch_state.has_authored_site_score = true
 
-	var resource_summary_variant: Variant = stamp_data.get("resource_summary", {})
-	if resource_summary_variant is Dictionary:
-		patch_state.resource_summary = (resource_summary_variant as Dictionary).duplicate(true)
-
-	var hazard_summary_variant: Variant = stamp_data.get("hazard_summary", {})
-	if hazard_summary_variant is Dictionary:
-		patch_state.hazard_summary = (hazard_summary_variant as Dictionary).duplicate(true)
-
-	var reveal_state: String = str(stamp_data.get("reveal_state", "")).strip_edges()
-	if not reveal_state.is_empty():
-		patch_state.reveal_state = reveal_state
-
 	return patch_state
-
 
 func _build_chunks(world_state: WorldState) -> void:
 	var chunk_size_cells: int = max(world_state.chunk_size_cells, 1)

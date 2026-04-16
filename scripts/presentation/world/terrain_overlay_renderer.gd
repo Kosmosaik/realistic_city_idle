@@ -214,37 +214,30 @@ func _draw_buildability_overlay(world_state: WorldState) -> void:
 			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
 
 func _draw_site_score_overlay(world_state: WorldState) -> void:
-	var patch_states: Array[WorldPatchState] = world_state.get_all_patches()
-
-	for patch_state: WorldPatchState in patch_states:
-		if patch_state == null:
+	for patch_state: WorldPatchState in world_state.get_all_patches():
+		if patch_state.site_score <= 0.0:
 			continue
 
-		var patch_rect: Rect2 = _build_patch_world_rect(world_state, patch_state)
-		if patch_rect.size.x <= 0.0 or patch_rect.size.y <= 0.0:
-			continue
+		var normalized_site_score: float = _normalize_site_score(patch_state.site_score)
+		var overlay_color: Color = _resolve_site_score_fill_color(normalized_site_score)
+		var patch_cell_indices: Array[Vector2i] = _get_patch_overlay_cell_indices(
+			world_state,
+			patch_state
+		)
 
-		# Site score is a patch-level signal, so render it as a patch heatmap.
-		var normalized_site_score: float = clamp(patch_state.site_score / 100.0, 0.0, 1.0)
-		var fill_color: Color = _resolve_site_score_fill_color(normalized_site_score)
-		var outline_color: Color = _resolve_site_score_outline_color(normalized_site_score)
-
-		draw_rect(patch_rect, fill_color, true)
-		draw_rect(patch_rect, outline_color, false, 1.0)
+		for cell_index: Vector2i in patch_cell_indices:
+			var cell_rect: Rect2 = world_state.get_cell_rect_world(cell_index)
+			draw_rect(cell_rect, overlay_color, true)
 
 func _draw_patch_boundary_overlay(world_state: WorldState) -> void:
-	var patch_states: Array[WorldPatchState] = world_state.get_all_patches()
+	for patch_state: WorldPatchState in world_state.get_all_patches():
+		var normalized_site_score: float = _normalize_site_score(patch_state.site_score)
+		var boundary_color: Color = _resolve_site_score_outline_color(normalized_site_score)
 
-	for patch_state: WorldPatchState in patch_states:
-		if patch_state == null:
-			continue
+		if patch_state.site_score <= 0.0:
+			boundary_color = _resolve_patch_outline_color(patch_state)
 
-		var patch_rect: Rect2 = _build_patch_world_rect(world_state, patch_state)
-		if patch_rect.size.x <= 0.0 or patch_rect.size.y <= 0.0:
-			continue
-
-		var outline_color: Color = _resolve_patch_outline_color(patch_state)
-		draw_rect(patch_rect, outline_color, false, OUTLINE_WIDTH)
+		_draw_patch_footprint_outline(world_state, patch_state, boundary_color)
 
 func _draw_fog_memory_overlay(world_state: WorldState) -> void:
 	for y: int in range(world_state.world_height_cells):
@@ -295,18 +288,82 @@ func _find_elevation_bounds(world_state: WorldState) -> Dictionary:
 		"max_elevation_step": max_elevation_step,
 	}
 
-func _build_patch_world_rect(world_state: WorldState, patch_state: WorldPatchState) -> Rect2:
-	var patch_position_pixels: Vector2 = Vector2(
-		float(patch_state.rect_position.x * world_state.cell_size_pixels),
-		float(patch_state.rect_position.y * world_state.cell_size_pixels)
-	)
+func _get_patch_overlay_cell_indices(
+	world_state: WorldState,
+	patch_state: WorldPatchState
+) -> Array[Vector2i]:
+	var patch_cell_indices: Array[Vector2i] = []
 
-	var patch_size_pixels: Vector2 = Vector2(
-		float(patch_state.rect_size.x * world_state.cell_size_pixels),
-		float(patch_state.rect_size.y * world_state.cell_size_pixels)
-	)
+	if not patch_state.cell_indices.is_empty():
+		for cell_index: Vector2i in patch_state.cell_indices:
+			if world_state.is_cell_index_in_bounds(cell_index):
+				patch_cell_indices.append(cell_index)
 
-	return Rect2(patch_position_pixels, patch_size_pixels)
+		if not patch_cell_indices.is_empty():
+			return patch_cell_indices
+
+	var start_x: int = patch_state.rect_position.x
+	var start_y: int = patch_state.rect_position.y
+	var end_x: int = patch_state.rect_position.x + patch_state.rect_size.x
+	var end_y: int = patch_state.rect_position.y + patch_state.rect_size.y
+
+	for y: int in range(start_y, end_y):
+		for x: int in range(start_x, end_x):
+			var cell_index := Vector2i(x, y)
+			if world_state.is_cell_index_in_bounds(cell_index):
+				patch_cell_indices.append(cell_index)
+
+	return patch_cell_indices
+
+
+func _draw_patch_footprint_outline(
+	world_state: WorldState,
+	patch_state: WorldPatchState,
+	boundary_color: Color
+) -> void:
+	var patch_cell_indices: Array[Vector2i] = _get_patch_overlay_cell_indices(world_state, patch_state)
+	if patch_cell_indices.is_empty():
+		return
+
+	var cell_lookup: Dictionary = {}
+	for cell_index: Vector2i in patch_cell_indices:
+		cell_lookup[_build_patch_cell_lookup_key(cell_index)] = true
+
+	for cell_index: Vector2i in patch_cell_indices:
+		var cell_rect: Rect2 = world_state.get_cell_rect_world(cell_index)
+		var top_left: Vector2 = cell_rect.position
+		var top_right: Vector2 = Vector2(cell_rect.position.x + cell_rect.size.x, cell_rect.position.y)
+		var bottom_left: Vector2 = Vector2(cell_rect.position.x, cell_rect.position.y + cell_rect.size.y)
+		var bottom_right: Vector2 = cell_rect.position + cell_rect.size
+
+		var north_key: String = _build_patch_cell_lookup_key(cell_index + Vector2i(0, -1))
+		var south_key: String = _build_patch_cell_lookup_key(cell_index + Vector2i(0, 1))
+		var west_key: String = _build_patch_cell_lookup_key(cell_index + Vector2i(-1, 0))
+		var east_key: String = _build_patch_cell_lookup_key(cell_index + Vector2i(1, 0))
+
+		if not cell_lookup.has(north_key):
+			draw_line(top_left, top_right, boundary_color, 1.0)
+		if not cell_lookup.has(south_key):
+			draw_line(bottom_left, bottom_right, boundary_color, 1.0)
+		if not cell_lookup.has(west_key):
+			draw_line(top_left, bottom_left, boundary_color, 1.0)
+		if not cell_lookup.has(east_key):
+			draw_line(top_right, bottom_right, boundary_color, 1.0)
+
+
+func _build_patch_cell_lookup_key(cell_index: Vector2i) -> String:
+	return "%s,%s" % [cell_index.x, cell_index.y]
+
+func _normalize_site_score(site_score: float) -> float:
+	if site_score <= 0.0:
+		return 0.0
+
+	# Older/debug values may already be normalized.
+	if site_score <= 1.0:
+		return clamp(site_score, 0.0, 1.0)
+
+	# Current patch scoring uses a 0..100 scale.
+	return clamp(site_score / 100.0, 0.0, 1.0)
 
 func _resolve_site_score_fill_color(normalized_site_score: float) -> Color:
 	var clamped_score: float = clamp(normalized_site_score, 0.0, 1.0)

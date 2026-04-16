@@ -238,6 +238,7 @@ func _build_patch_section_lines(title: String, inspector_entry: Dictionary) -> A
 			_display_or_dash(str(patch.get("patch_type", ""))),
 		])
 		lines.append("    Source Stamp: %s" % _display_or_dash(str(patch.get("source_stamp_id", ""))))
+		lines.append("    Source Tags: %s" % _format_string_array(patch.get("source_tags", [])))
 		lines.append("    Rect Position: %s" % _format_vector2i(patch.get("rect_position", Vector2i.ZERO)))
 		lines.append("    Rect Size: %s" % _format_vector2i(patch.get("rect_size", Vector2i.ZERO)))
 		lines.append("    Area Cell Count: %s" % str(patch.get("area_cell_count", 0)))

@@ -441,13 +441,34 @@ func _draw_canopy_pass(world_state: WorldState) -> void:
 		if not _should_draw_canopy_for_patch(patch_state):
 			continue
 
-		var patch_rect: Rect2 = _build_patch_world_rect(world_state, patch_state)
+		var patch_footprint_cell_indices: Array[Vector2i] = _resolve_patch_footprint_cell_indices(
+			world_state,
+			patch_state
+		)
+		if patch_footprint_cell_indices.is_empty():
+			continue
+
 		var canopy_count: int = _resolve_canopy_count_for_patch(patch_state)
+		if canopy_count <= 0:
+			continue
 
 		for canopy_index: int in range(canopy_count):
-			var canopy_center: Vector2 = _resolve_patch_canopy_center(patch_rect, patch_state, canopy_index)
-			var canopy_radius: float = _resolve_patch_canopy_radius(patch_state, canopy_index)
-			var canopy_color: Color = _resolve_patch_canopy_color(patch_state, canopy_index)
+			var canopy_center: Vector2 = _resolve_patch_canopy_center(
+				world_state,
+				patch_state,
+				patch_footprint_cell_indices,
+				canopy_index,
+				canopy_count
+			)
+			var canopy_radius: float = _resolve_patch_canopy_radius(
+				patch_state,
+				canopy_index
+			)
+			var canopy_color: Color = _resolve_patch_canopy_color(
+				patch_state,
+				canopy_index
+			)
+
 			draw_circle(canopy_center, canopy_radius, canopy_color)
 			
 func _draw_hillshade_pass(world_state: WorldState) -> void:
@@ -594,30 +615,65 @@ func _resolve_canopy_count_for_patch(patch_state: WorldPatchState) -> int:
 		_:
 			return 0
 
-func _resolve_patch_canopy_center(patch_rect: Rect2, patch_state: WorldPatchState, canopy_index: int) -> Vector2:
+func _resolve_patch_canopy_center(
+	world_state: WorldState,
+	patch_state: WorldPatchState,
+	patch_footprint_cell_indices: Array[Vector2i],
+	canopy_index: int,
+	canopy_count: int
+) -> Vector2:
+	if patch_footprint_cell_indices.is_empty():
+		var fallback_rect := Rect2(
+			Vector2(patch_state.rect_position * world_state.cell_size_pixels),
+			Vector2(patch_state.rect_size * world_state.cell_size_pixels)
+		)
+		return fallback_rect.get_center()
+
+	var footprint_cell_count: int = patch_footprint_cell_indices.size()
+	var sample_ratio: float = (float(canopy_index) + 0.5) / float(maxi(canopy_count, 1))
+	var sampled_cell_position: int = clampi(
+		int(floor(sample_ratio * float(footprint_cell_count))),
+		0,
+		footprint_cell_count - 1
+	)
+
+	var anchor_cell_index: Vector2i = patch_footprint_cell_indices[sampled_cell_position]
+	var anchor_cell_rect: Rect2 = world_state.get_cell_rect_world(anchor_cell_index)
+	var anchor_center: Vector2 = anchor_cell_rect.get_center()
+
 	var patch_seed: int = patch_state.patch_id.hash()
-	var offset_x_ratio: float = _hash_patch_01(patch_seed, canopy_index * 2 + 1)
-	var offset_y_ratio: float = _hash_patch_01(patch_seed, canopy_index * 2 + 2)
+	var offset_x_ratio: float = _hash_patch_01(patch_seed, canopy_index * 5 + 1) - 0.5
+	var offset_y_ratio: float = _hash_patch_01(patch_seed, canopy_index * 5 + 2) - 0.5
+	var offset_scale: float = float(world_state.cell_size_pixels) * 0.28
 
-	var margin_x: float = minf(18.0, patch_rect.size.x * 0.22)
-	var margin_y: float = minf(18.0, patch_rect.size.y * 0.22)
+	return anchor_center + Vector2(offset_x_ratio * offset_scale, offset_y_ratio * offset_scale)
 
-	var min_x: float = patch_rect.position.x + margin_x
-	var max_x: float = patch_rect.end.x - margin_x
-	var min_y: float = patch_rect.position.y + margin_y
-	var max_y: float = patch_rect.end.y - margin_y
+func _resolve_patch_footprint_cell_indices(
+	world_state: WorldState,
+	patch_state: WorldPatchState
+) -> Array[Vector2i]:
+	var footprint_cell_indices: Array[Vector2i] = []
 
-	if max_x <= min_x:
-		min_x = patch_rect.position.x + patch_rect.size.x * 0.5
-		max_x = min_x
+	if not patch_state.cell_indices.is_empty():
+		for cell_index: Vector2i in patch_state.cell_indices:
+			if world_state.is_cell_index_in_bounds(cell_index):
+				footprint_cell_indices.append(cell_index)
 
-	if max_y <= min_y:
-		min_y = patch_rect.position.y + patch_rect.size.y * 0.5
-		max_y = min_y
+		if not footprint_cell_indices.is_empty():
+			return footprint_cell_indices
 
-	var center_x: float = lerpf(min_x, max_x, offset_x_ratio)
-	var center_y: float = lerpf(min_y, max_y, offset_y_ratio)
-	return Vector2(center_x, center_y)
+	var start_x: int = patch_state.rect_position.x
+	var start_y: int = patch_state.rect_position.y
+	var end_x: int = patch_state.rect_position.x + patch_state.rect_size.x
+	var end_y: int = patch_state.rect_position.y + patch_state.rect_size.y
+
+	for y: int in range(start_y, end_y):
+		for x: int in range(start_x, end_x):
+			var cell_index := Vector2i(x, y)
+			if world_state.is_cell_index_in_bounds(cell_index):
+				footprint_cell_indices.append(cell_index)
+
+	return footprint_cell_indices
 
 func _resolve_patch_canopy_radius(patch_state: WorldPatchState, canopy_index: int) -> float:
 	var patch_seed: int = patch_state.patch_id.hash()

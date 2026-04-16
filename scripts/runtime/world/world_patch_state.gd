@@ -4,6 +4,7 @@ class_name WorldPatchState
 var patch_id: String = ""
 var patch_type: String = "authored_rect"
 var source_stamp_id: String = ""
+var source_tags: PackedStringArray = PackedStringArray()
 
 var rect_position: Vector2i = Vector2i.ZERO
 var rect_size: Vector2i = Vector2i.ZERO
@@ -56,6 +57,17 @@ func set_point_of_interest_tags(tags: PackedStringArray) -> void:
 
 		if not point_of_interest_tags.has(trimmed_tag):
 			point_of_interest_tags.append(trimmed_tag)
+			
+func set_source_tags(tags: PackedStringArray) -> void:
+	source_tags = PackedStringArray()
+
+	for tag: String in tags:
+		var trimmed_tag: String = tag.strip_edges()
+		if trimmed_tag.is_empty():
+			continue
+
+		if not source_tags.has(trimmed_tag):
+			source_tags.append(trimmed_tag)
 
 func finalize_from_world_state(world_state: WorldState) -> void:
 	if world_state == null:
@@ -188,6 +200,7 @@ func to_debug_dictionary() -> Dictionary:
 		"patch_id": patch_id,
 		"patch_type": patch_type,
 		"source_stamp_id": source_stamp_id,
+		"source_tags": source_tags,
 		"rect_position": rect_position,
 		"rect_size": rect_size,
 		"cell_count": cell_keys.size(),
