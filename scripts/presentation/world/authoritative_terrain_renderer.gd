@@ -17,6 +17,15 @@ const COLOR_CANOPY_WOODLAND_DARK: Color = Color8(38, 54, 38)
 const COLOR_CANOPY_BRUSH: Color = Color8(67, 87, 59)
 const COLOR_CANOPY_BRUSH_DARK: Color = Color8(53, 71, 48)
 
+const COLOR_FEATURE_TREE: Color = Color8(63, 84, 56)
+const COLOR_FEATURE_TREE_DARK: Color = Color8(45, 60, 40)
+const COLOR_FEATURE_REED: Color = Color8(132, 136, 89)
+const COLOR_FEATURE_REED_DARK: Color = Color8(96, 101, 65)
+const COLOR_FEATURE_STONE: Color = Color8(126, 118, 108)
+const COLOR_FEATURE_STONE_DARK: Color = Color8(95, 89, 82)
+const COLOR_FEATURE_INVALID: Color = Color8(196, 92, 78)
+const COLOR_FEATURE_INVALID_DARK: Color = Color8(132, 58, 48)
+
 const COLOR_SITE_HINT: Color = Color8(201, 182, 129)
 const COLOR_BORDER: Color = Color(0.0, 0.0, 0.0, 0.42)
 
@@ -72,6 +81,7 @@ func _draw() -> void:
 	_draw_surface_variation_pass(world_state)
 	_draw_water_pass(world_state)
 	_draw_canopy_pass(world_state)
+	_draw_authored_feature_pass(world_state)
 	_draw_hillshade_pass(world_state)
 
 	if _is_site_hint_debug_visible():
@@ -417,13 +427,6 @@ func _is_linear_surface_water_type(surface_water_type: String) -> bool:
 		_:
 			return false
 
-func _get_zoom_band_id() -> String:
-	var camera: Camera2D = get_viewport().get_camera_2d()
-	if camera != null and camera.has_method("get_zoom_band_id"):
-		return camera.call("get_zoom_band_id")
-
-	return "mid"
-
 func _is_site_hint_debug_visible() -> bool:
 	var sim_root: Node = _sim_root()
 	if sim_root == null:
@@ -431,6 +434,16 @@ func _is_site_hint_debug_visible() -> bool:
 
 	if sim_root.has_method("is_debug_site_hints_visible"):
 		return bool(sim_root.call("is_debug_site_hints_visible"))
+
+	return false
+	
+func _is_debug_force_full_visibility_enabled() -> bool:
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		return false
+
+	if sim_root.has_method("is_debug_force_full_visibility_enabled"):
+		return bool(sim_root.call("is_debug_force_full_visibility_enabled"))
 
 	return false
 		
@@ -470,6 +483,208 @@ func _draw_canopy_pass(world_state: WorldState) -> void:
 			)
 
 			draw_circle(canopy_center, canopy_radius, canopy_color)
+
+func _draw_authored_feature_pass(world_state: WorldState) -> void:
+	var zoom_band_id: String = _get_zoom_band_id()
+	var terrain_objects: Array[Dictionary] = world_state.get_all_authored_terrain_objects()
+	var force_full_visibility_enabled: bool = _is_debug_force_full_visibility_enabled()
+
+	for object_entry: Dictionary in terrain_objects:
+		var cell_index_variant: Variant = object_entry.get("cell_index", null)
+		if not (cell_index_variant is Vector2i):
+			continue
+
+		var cell_index: Vector2i = cell_index_variant
+		var cell_state: WorldCellState = world_state.get_cell(cell_index)
+		if cell_state == null:
+			continue
+
+		# Normal mode respects reveal state.
+		# Debug full-visibility mode lets us inspect all authored placements.
+		if not force_full_visibility_enabled and not cell_state.is_revealed:
+			continue
+
+		var cell_rect: Rect2 = world_state.get_cell_rect_world(cell_index)
+		var visibility_alpha: float = _resolve_feature_visibility_alpha(cell_state)
+		var placement_family: String = str(object_entry.get("placement_family", "")).strip_edges()
+
+		match placement_family:
+			"tree":
+				_draw_tree_feature_object(cell_rect, object_entry, zoom_band_id, visibility_alpha)
+			"wet_margin_plant":
+				_draw_reed_feature_object(cell_rect, object_entry, zoom_band_id, visibility_alpha)
+			"rocky_marker":
+				_draw_stone_feature_object(cell_rect, object_entry, zoom_band_id, visibility_alpha)
+			_:
+				_draw_generic_feature_object(cell_rect, object_entry, visibility_alpha)
+
+func _draw_tree_feature_object(
+	cell_rect: Rect2,
+	object_entry: Dictionary,
+	zoom_band_id: String,
+	visibility_alpha: float
+) -> void:
+	var base_color: Color = _resolve_feature_base_color(object_entry, COLOR_FEATURE_TREE)
+	var dark_color: Color = _resolve_feature_dark_color(object_entry, COLOR_FEATURE_TREE_DARK)
+
+	base_color = _with_multiplied_alpha(base_color, visibility_alpha)
+	dark_color = _with_multiplied_alpha(dark_color, visibility_alpha)
+
+	var center: Vector2 = cell_rect.get_center().round()
+	var cell_size: float = minf(cell_rect.size.x, cell_rect.size.y)
+
+	match zoom_band_id:
+		"far":
+			draw_circle(center, cell_size * 0.12, dark_color)
+		"mid":
+			draw_circle(center + Vector2(-3.0, -2.0), cell_size * 0.14, dark_color)
+			draw_circle(center + Vector2(2.0, -1.0), cell_size * 0.16, base_color)
+			draw_line(
+				center + Vector2(0.0, 3.0),
+				center + Vector2(0.0, cell_size * 0.22),
+				dark_color,
+				2.0,
+				false
+			)
+		_:
+			draw_circle(center + Vector2(-4.0, -3.0), cell_size * 0.14, dark_color)
+			draw_circle(center + Vector2(0.0, -5.0), cell_size * 0.16, base_color)
+			draw_circle(center + Vector2(4.0, -2.0), cell_size * 0.13, dark_color)
+			draw_line(
+				center + Vector2(0.0, 2.0),
+				center + Vector2(0.0, cell_size * 0.26),
+				dark_color,
+				2.0,
+				false
+			)
+
+	_draw_invalid_feature_marker_if_needed(cell_rect, object_entry, visibility_alpha)
+
+func _draw_reed_feature_object(
+	cell_rect: Rect2,
+	object_entry: Dictionary,
+	zoom_band_id: String,
+	visibility_alpha: float
+) -> void:
+	var base_color: Color = _resolve_feature_base_color(object_entry, COLOR_FEATURE_REED)
+	var dark_color: Color = _resolve_feature_dark_color(object_entry, COLOR_FEATURE_REED_DARK)
+
+	base_color = _with_multiplied_alpha(base_color, visibility_alpha)
+	dark_color = _with_multiplied_alpha(dark_color, visibility_alpha)
+
+	var center: Vector2 = cell_rect.get_center().round()
+	var base_position: Vector2 = center + Vector2(0.0, 5.0)
+
+	match zoom_band_id:
+		"far":
+			draw_circle(center, 2.0, dark_color)
+		"mid":
+			draw_line(base_position, base_position + Vector2(-2.0, -8.0), base_color, 2.0, false)
+			draw_line(base_position, base_position + Vector2(0.0, -10.0), dark_color, 2.0, false)
+			draw_line(base_position, base_position + Vector2(2.0, -8.0), base_color, 2.0, false)
+		_:
+			draw_line(base_position, base_position + Vector2(-4.0, -10.0), base_color, 2.0, false)
+			draw_line(base_position, base_position + Vector2(-2.0, -12.0), dark_color, 2.0, false)
+			draw_line(base_position, base_position + Vector2(0.0, -13.0), base_color, 2.0, false)
+			draw_line(base_position, base_position + Vector2(2.0, -11.0), dark_color, 2.0, false)
+			draw_line(base_position, base_position + Vector2(4.0, -9.0), base_color, 2.0, false)
+			draw_rect(
+				Rect2(base_position + Vector2(-4.0, -1.0), Vector2(8.0, 3.0)),
+				_with_multiplied_alpha(dark_color, 0.75),
+				true
+			)
+
+	_draw_invalid_feature_marker_if_needed(cell_rect, object_entry, visibility_alpha)
+
+func _draw_stone_feature_object(
+	cell_rect: Rect2,
+	object_entry: Dictionary,
+	zoom_band_id: String,
+	visibility_alpha: float
+) -> void:
+	var base_color: Color = _resolve_feature_base_color(object_entry, COLOR_FEATURE_STONE)
+	var dark_color: Color = _resolve_feature_dark_color(object_entry, COLOR_FEATURE_STONE_DARK)
+
+	base_color = _with_multiplied_alpha(base_color, visibility_alpha)
+	dark_color = _with_multiplied_alpha(dark_color, visibility_alpha)
+
+	var center: Vector2 = cell_rect.get_center().round()
+
+	match zoom_band_id:
+		"far":
+			draw_rect(Rect2(center + Vector2(-2.0, -2.0), Vector2(4.0, 4.0)), dark_color, true)
+		"mid":
+			draw_rect(Rect2(center + Vector2(-5.0, -1.0), Vector2(5.0, 4.0)), dark_color, true)
+			draw_rect(Rect2(center + Vector2(0.0, -4.0), Vector2(5.0, 6.0)), base_color, true)
+		_:
+			draw_rect(Rect2(center + Vector2(-6.0, -1.0), Vector2(5.0, 4.0)), dark_color, true)
+			draw_rect(Rect2(center + Vector2(-1.0, -5.0), Vector2(5.0, 6.0)), base_color, true)
+			draw_rect(Rect2(center + Vector2(3.0, -1.0), Vector2(4.0, 4.0)), dark_color, true)
+
+	_draw_invalid_feature_marker_if_needed(cell_rect, object_entry, visibility_alpha)
+
+func _draw_generic_feature_object(
+	cell_rect: Rect2,
+	object_entry: Dictionary,
+	visibility_alpha: float
+) -> void:
+	var base_color: Color = _resolve_feature_base_color(object_entry, COLOR_FEATURE_STONE)
+	base_color = _with_multiplied_alpha(base_color, visibility_alpha)
+
+	var center: Vector2 = cell_rect.get_center().round()
+	draw_circle(center, 3.0, base_color)
+
+	_draw_invalid_feature_marker_if_needed(cell_rect, object_entry, visibility_alpha)
+
+func _draw_invalid_feature_marker_if_needed(
+	cell_rect: Rect2,
+	object_entry: Dictionary,
+	visibility_alpha: float
+) -> void:
+	if bool(object_entry.get("is_valid_placement", true)):
+		return
+
+	var cross_color: Color = _with_multiplied_alpha(COLOR_FEATURE_INVALID, visibility_alpha)
+	var inset: float = 6.0
+	var top_left: Vector2 = cell_rect.position + Vector2(inset, inset)
+	var top_right: Vector2 = Vector2(cell_rect.end.x - inset, cell_rect.position.y + inset)
+	var bottom_left: Vector2 = Vector2(cell_rect.position.x + inset, cell_rect.end.y - inset)
+	var bottom_right: Vector2 = cell_rect.end - Vector2(inset, inset)
+
+	draw_line(top_left, bottom_right, cross_color, 2.0, false)
+	draw_line(top_right, bottom_left, cross_color, 2.0, false)
+
+func _resolve_feature_visibility_alpha(cell_state: WorldCellState) -> float:
+	if _is_debug_force_full_visibility_enabled():
+		return 1.0
+
+	if cell_state.is_currently_visible:
+		return 1.0
+
+	if cell_state.is_revealed:
+		return 0.55
+
+	return 0.0
+
+func _resolve_feature_base_color(object_entry: Dictionary, fallback_color: Color) -> Color:
+	if bool(object_entry.get("is_valid_placement", true)):
+		return fallback_color
+
+	return COLOR_FEATURE_INVALID
+
+func _resolve_feature_dark_color(object_entry: Dictionary, fallback_color: Color) -> Color:
+	if bool(object_entry.get("is_valid_placement", true)):
+		return fallback_color
+
+	return COLOR_FEATURE_INVALID_DARK
+
+func _with_multiplied_alpha(color: Color, alpha_multiplier: float) -> Color:
+	return Color(
+		color.r,
+		color.g,
+		color.b,
+		color.a * alpha_multiplier
+	)
 			
 func _draw_hillshade_pass(world_state: WorldState) -> void:
 	for y: int in range(world_state.world_height_cells):
@@ -730,14 +945,18 @@ func _build_render_signature() -> String:
 	if world_state == null:
 		return "no_world"
 
-	return "%s|%s|%s|%s|%s|%s|%s" % [
+	return "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [
 		world_state.world_id,
 		str(world_state.get_cell_count()),
 		str(world_state.get_patch_count()),
+		str(world_state.get_all_authored_terrain_objects().size()),
 		str(world_state.world_width_cells),
 		str(world_state.world_height_cells),
 		str(world_state.seed),
+		str(world_state.visibility_revision),
+		_get_zoom_band_id(),
 		str(_is_site_hint_debug_visible()),
+		str(_is_debug_force_full_visibility_enabled()),
 	]
 
 func _get_world_state() -> WorldState:
@@ -749,6 +968,13 @@ func _get_world_state() -> WorldState:
 		return null
 
 	return sim_root.call("get_world_state") as WorldState
+
+func _get_zoom_band_id() -> String:
+	var active_camera: Camera2D = get_viewport().get_camera_2d()
+	if active_camera != null and active_camera.has_method("get_zoom_band_id"):
+		return str(active_camera.call("get_zoom_band_id"))
+
+	return "mid"
 
 func _sim_root() -> Node:
 	return get_node_or_null("/root/SimRoot")

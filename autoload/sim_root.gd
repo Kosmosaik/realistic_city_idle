@@ -43,6 +43,7 @@ var debug_selected_cell_index: Vector2i = INVALID_CELL_INDEX
 var debug_overlay_mode_id: String = "off"
 var debug_terrain_inspector_visible: bool = true
 var debug_site_hints_visible: bool = false
+var debug_force_full_visibility: bool = false
 
 
 func _ready() -> void:
@@ -449,6 +450,17 @@ func toggle_debug_site_hints_visible() -> bool:
 	debug_site_hints_visible = not debug_site_hints_visible
 	return debug_site_hints_visible
 
+func is_debug_force_full_visibility_enabled() -> bool:
+	return debug_force_full_visibility
+
+
+func set_debug_force_full_visibility_enabled(is_enabled: bool) -> void:
+	debug_force_full_visibility = is_enabled
+
+
+func toggle_debug_force_full_visibility_enabled() -> bool:
+	debug_force_full_visibility = not debug_force_full_visibility
+	return debug_force_full_visibility
 
 func get_world_debug_snapshot() -> Dictionary:
 	var camera_snapshot: Dictionary = {}
@@ -468,6 +480,7 @@ func get_world_debug_snapshot() -> Dictionary:
 			"debug_overlay_mode_id": debug_overlay_mode_id,
 			"debug_terrain_inspector_visible": debug_terrain_inspector_visible,
 			"debug_site_hints_visible": debug_site_hints_visible,
+			"debug_force_full_visibility": debug_force_full_visibility,
 			"camera": camera_snapshot,
 			"focus_cells": [],
 			"hovered_cell": {},
@@ -478,6 +491,7 @@ func get_world_debug_snapshot() -> Dictionary:
 	snapshot["debug_overlay_mode_id"] = debug_overlay_mode_id
 	snapshot["debug_terrain_inspector_visible"] = debug_terrain_inspector_visible
 	snapshot["debug_site_hints_visible"] = debug_site_hints_visible
+	snapshot["debug_force_full_visibility"] = debug_force_full_visibility
 	snapshot["camera"] = camera_snapshot
 	snapshot["focus_cells"] = snapshot.get("debug_focus_entries", [])
 	snapshot["hovered_cell"] = _build_debug_inspector_entry("hovered", debug_hovered_cell_index)

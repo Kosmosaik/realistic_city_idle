@@ -6,6 +6,7 @@ const OUTLINE_WIDTH: float = 2.0
 
 var _last_world_id: String = ""
 var _last_overlay_mode_id: String = "off"
+var _last_force_full_visibility_enabled: bool = false
 
 var _cached_elevation_bounds_world_id: String = ""
 var _cached_elevation_bounds: Dictionary = {}
@@ -18,6 +19,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var current_world_id: String = _get_current_world_id()
 	var current_overlay_mode_id: String = _get_current_overlay_mode_id()
+	var current_force_full_visibility_enabled: bool = _is_debug_force_full_visibility_enabled()
 
 	var needs_redraw: bool = false
 
@@ -28,6 +30,10 @@ func _process(_delta: float) -> void:
 
 	if current_overlay_mode_id != _last_overlay_mode_id:
 		_last_overlay_mode_id = current_overlay_mode_id
+		needs_redraw = true
+
+	if current_force_full_visibility_enabled != _last_force_full_visibility_enabled:
+		_last_force_full_visibility_enabled = current_force_full_visibility_enabled
 		needs_redraw = true
 
 	if needs_redraw:
@@ -47,21 +53,27 @@ func _unhandled_input(event: InputEvent) -> void:
 	if key_event.echo:
 		return
 
-	if key_event.keycode != KEY_O:
-		return
-
 	var sim_root: Node = _sim_root()
 	if sim_root == null:
 		return
 
-	var direction: int = 1
-	if key_event.shift_pressed:
-		direction = -1
+	if key_event.keycode == KEY_O:
+		var direction: int = 1
+		if key_event.shift_pressed:
+			direction = -1
 
-	if sim_root.has_method("cycle_debug_overlay_mode"):
-		sim_root.call("cycle_debug_overlay_mode", direction)
-		queue_redraw()
-		get_viewport().set_input_as_handled()
+		if sim_root.has_method("cycle_debug_overlay_mode"):
+			sim_root.call("cycle_debug_overlay_mode", direction)
+			queue_redraw()
+			get_viewport().set_input_as_handled()
+		return
+
+	if key_event.keycode == KEY_F6:
+		if sim_root.has_method("toggle_debug_force_full_visibility_enabled"):
+			sim_root.call("toggle_debug_force_full_visibility_enabled")
+			queue_redraw()
+			get_viewport().set_input_as_handled()
+		return
 
 func _draw() -> void:
 	var sim_root: Node = _sim_root()
@@ -240,6 +252,9 @@ func _draw_patch_boundary_overlay(world_state: WorldState) -> void:
 		_draw_patch_footprint_outline(world_state, patch_state, boundary_color)
 
 func _draw_fog_memory_overlay(world_state: WorldState) -> void:
+	if _is_debug_force_full_visibility_enabled():
+		return
+
 	for y: int in range(world_state.world_height_cells):
 		for x: int in range(world_state.world_width_cells):
 			var cell_index: Vector2i = Vector2i(x, y)
@@ -452,6 +467,16 @@ func _get_current_overlay_mode_id() -> String:
 		return "off"
 
 	return str(sim_root.call("get_debug_overlay_mode_id"))
+	
+func _is_debug_force_full_visibility_enabled() -> bool:
+	var sim_root: Node = _sim_root()
+	if sim_root == null:
+		return false
+
+	if not sim_root.has_method("is_debug_force_full_visibility_enabled"):
+		return false
+
+	return bool(sim_root.call("is_debug_force_full_visibility_enabled"))
 
 func _sim_root() -> Node:
 	return get_node_or_null("/root/SimRoot")

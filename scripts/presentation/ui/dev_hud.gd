@@ -122,6 +122,7 @@ func _refresh_text() -> void:
 
 	var camera_snapshot: Dictionary = world_snapshot.get("camera", {}) as Dictionary
 	var site_hints_state_text: String = "On" if bool(world_snapshot.get("debug_site_hints_visible", false)) else "Off"
+	var full_visibility_state_text: String = "On" if bool(world_snapshot.get("debug_force_full_visibility", false)) else "Off"
 	var camera_center_cell_text: String = _build_cell_index_text(camera_snapshot.get("center_cell_index", Vector2i(-1, -1)))
 
 	var recent_phase_entries: Array = calendar.get("debug_recent_phase_entries", [])
@@ -197,8 +198,6 @@ func _refresh_text() -> void:
 		"Overlay Legend:",
 		overlay_legend_text,
 		"Terrain Inspector: %s" % terrain_inspector_state_text,
-		"Site Hints: %s" % site_hints_state_text,
-		"Camera Zoom: %.2f" % float(camera_snapshot.get("zoom_scalar", 1.0)),
 		"Camera Band: %s" % _display_or_dash(str(camera_snapshot.get("zoom_band_id", ""))),
 		"Camera Cell: %s" % camera_center_cell_text,
 		"Focus Cells:",
@@ -272,6 +271,7 @@ func _refresh_text() -> void:
 		"F3: toggle HUD",
 		"F4: toggle terrain inspector",
 		"F5: toggle site hints",
+		"F6: toggle full visibility",
 		"Mouse wheel: zoom camera or scroll HUD",
 		"Middle mouse drag / WASD / arrows: pan camera",
 		"Left click: select cell",

@@ -11,7 +11,9 @@ class_name WorldCameraController
 # 0.50  -> 16 px
 # 0.375	-> 12 px
 # 0.250 -> 8 px
-const ZOOM_LEVELS: Array[float] = [1.50, 1.25, 1.0, 0.875, 0.75, 0.625, 0.5, 0.375, 0.25]
+# 0.125 -> 4 px
+
+const ZOOM_LEVELS: Array[float] = [1.50, 1.25, 1.0, 0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125]
 const DEFAULT_ZOOM_LEVEL_INDEX: int = 4
 
 const KEYBOARD_PAN_SPEED_PIXELS_PER_SECOND: float = 1200.0
@@ -80,12 +82,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func get_zoom_band_id() -> String:
 	if _current_zoom_level_index <= 1:
-		return "far"
+		return "close"
 
 	if _current_zoom_level_index <= 3:
 		return "mid"
 
-	return "close"
+	return "far"
 
 func get_camera_debug_snapshot() -> Dictionary:
 	var center_cell_index: Vector2i = Vector2i(-1, -1)
