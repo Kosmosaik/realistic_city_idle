@@ -1,4 +1,5 @@
-Open the new zip and recursively read all files. Follow the project docs as the source of truth. Do not invent architecture that conflicts with them. Write future-proof, data-driven, modular code with clear responsibilities, reusable systems, and configurable definitions for content like items, processes, buildings, tasks, and NPC data. Prefer clean structures over shortcuts or hardcoding. Keep implementation aligned with the technical specs, naming, enums, schemas, and progression rules already established. When uncertain, reconcile with the documentation and/or user before changing direction. Add short explanations as comments in the code. Don't use inferred variables but explicit.
+Open the new zip and recursively read all files. Follow the project docs as the source of truth. Do not invent architecture that conflicts with them. Write future-proof, data-driven, modular code with clear responsibilities, reusable systems, and configurable definitions for content like items, processes, buildings, tasks, and NPC data. Prefer clean structures over shortcuts or hardcoding. Keep implementation aligned with the technical specs, naming, enums, schemas, and progression rules already established. When uncertain, reconcile with the documentation and/or user before changing direction. Add short explanations as comments in the code. Don't use inferred variables but explicit. In order to make sure we're keeping it realistic, do online
+research where you Think it may fit to get more knowledge about different things.
 
 Give me exact instructions, give me full code blocks (preferably whole functions or scripts) to put in the scripts and explain what we're doing each step in the chat. Don't send patch files or script files. Send me the code in the chat embedded in a scrollable text window (should be default for you already) so I can copy and paste the code directly into Godot. If giving me a code block to put inside an existing script, tell me exactly where to put it (not "somewhere around…" , not "where you have your other …").
 
@@ -10,3 +11,12 @@ I don't know if I like that we are adding patches aimed for "site evaluation" li
 I kinda want the terrain to only focus on terrain, and then let the player decide where to "put" a site,
 where to build etc, and let the player figure those things out without having pre-drawned areas for it.
 Do you feel me? 
+
+
+
+The true next step is to restore or rebuild real authored terrain stamps/patches so the world visually matches the authored ecological structure again, while keeping reveal driven by reveal sources instead of painted fog.
+
+
+Sending you a new zip. Open it and recursively read all files to get a good grasp of the whole project. Do thourough investigation on each topic. Give me exact instructions how to fix them. Give me full code blocks, preferably replacing whole scripts, otherwise whole functions. Don't be vague like "Put this somewhere around..." or "Where x is happening, add this". 
+
+Make smart code, future proof, data driven, easily configurable and expandable. Don't have a narrow focus to fix problems or errors, take the whole project into consideration so you don't destroy other stuff.

@@ -78,6 +78,7 @@ func _draw() -> void:
 		return
 
 	_draw_ground_pass(world_state)
+	_draw_land_patch_shape_pass(world_state)
 	_draw_surface_variation_pass(world_state)
 	_draw_water_pass(world_state)
 	_draw_canopy_pass(world_state)
@@ -100,6 +101,87 @@ func _draw_ground_pass(world_state: WorldState) -> void:
 			var cell_rect: Rect2 = world_state.cell_index_to_world_rect(cell_index)
 			var ground_color: Color = _resolve_ground_color(cell_state)
 			draw_rect(cell_rect, ground_color, true)
+			
+func _draw_land_patch_shape_pass(world_state: WorldState) -> void:
+	var patch_states: Array[WorldPatchState] = world_state.get_all_patches()
+	var zoom_band_id: String = _get_zoom_band_id()
+	var blob_radius_pixels: float = _resolve_land_patch_blob_radius_pixels(world_state, zoom_band_id)
+
+	for patch_state: WorldPatchState in patch_states:
+		if patch_state == null:
+			continue
+
+		# Water patches already have their own dedicated rendering pass.
+		if patch_state.surface_water_type != "none":
+			continue
+
+		var footprint_cell_indices: Array[Vector2i] = _resolve_patch_footprint_cell_indices(
+			world_state,
+			patch_state
+		)
+		if footprint_cell_indices.size() < 2:
+			continue
+
+		var overlay_color: Color = _resolve_land_patch_overlay_color(
+			world_state,
+			footprint_cell_indices
+		)
+		if overlay_color.a <= 0.0:
+			continue
+
+		_draw_connected_cell_blob(
+			world_state,
+			footprint_cell_indices,
+			overlay_color,
+			blob_radius_pixels
+		)
+
+
+func _resolve_land_patch_blob_radius_pixels(world_state: WorldState, zoom_band_id: String) -> float:
+	var half_cell_size_pixels: float = float(world_state.cell_size_pixels) * 0.5
+
+	match zoom_band_id:
+		"far":
+			return maxf(half_cell_size_pixels - 1.0, 4.0)
+		"mid":
+			return maxf(half_cell_size_pixels - 2.0, 4.0)
+		"close":
+			return maxf(half_cell_size_pixels - 3.0, 4.0)
+		_:
+			return maxf(half_cell_size_pixels - 2.0, 4.0)
+
+
+func _resolve_land_patch_overlay_color(
+	world_state: WorldState,
+	footprint_cell_indices: Array[Vector2i]
+) -> Color:
+	var accumulated_r: float = 0.0
+	var accumulated_g: float = 0.0
+	var accumulated_b: float = 0.0
+	var valid_cell_count: int = 0
+
+	for cell_index: Vector2i in footprint_cell_indices:
+		var cell_state: WorldCellState = world_state.get_cell(cell_index)
+		if cell_state == null:
+			continue
+
+		var base_ground_color: Color = _resolve_ground_color(cell_state)
+		accumulated_r += base_ground_color.r
+		accumulated_g += base_ground_color.g
+		accumulated_b += base_ground_color.b
+		valid_cell_count += 1
+
+	if valid_cell_count <= 0:
+		return Color(0.0, 0.0, 0.0, 0.0)
+
+	var averaged_color: Color = Color(
+		accumulated_r / float(valid_cell_count),
+		accumulated_g / float(valid_cell_count),
+		accumulated_b / float(valid_cell_count),
+		0.52
+	)
+
+	return averaged_color
 
 func _draw_surface_variation_pass(world_state: WorldState) -> void:
 	for y: int in range(world_state.world_height_cells):
@@ -125,7 +207,25 @@ func _draw_surface_variation_pass(world_state: WorldState) -> void:
 			draw_rect(cell_rect, variation_color, true)
 
 func _draw_water_pass(world_state: WorldState) -> void:
-	var fixed_zoom_band_id: String = "mid"
+	var zoom_band_id: String = _get_zoom_band_id()
+	var drawn_water_cell_keys: Dictionary = {}
+
+	var patch_states: Array[WorldPatchState] = world_state.get_all_patches()
+	for patch_state: WorldPatchState in patch_states:
+		if patch_state == null:
+			continue
+
+		var surface_water_type: String = patch_state.surface_water_type.strip_edges()
+		if surface_water_type.is_empty() or surface_water_type == "none":
+			continue
+
+		_draw_surface_water_patch(
+			world_state,
+			patch_state,
+			zoom_band_id,
+			drawn_water_cell_keys
+		)
+
 	var cell_keys: PackedStringArray = world_state.get_all_cell_keys()
 
 	for cell_key: String in cell_keys:
@@ -136,10 +236,175 @@ func _draw_water_pass(world_state: WorldState) -> void:
 		var cell_index: Vector2i = cell_state.cell_index
 
 		if cell_state.surface_water_type != "none":
-			_draw_surface_water_cell(world_state, cell_index, cell_state, fixed_zoom_band_id)
+			var rendered_cell_key: String = _build_renderer_cell_key(cell_index)
+			if drawn_water_cell_keys.has(rendered_cell_key):
+				continue
+
+			_draw_surface_water_cell(world_state, cell_index, cell_state, zoom_band_id)
 			continue
 
-		_draw_moisture_fringe_for_land_cell(world_state, cell_index, cell_state, fixed_zoom_band_id)
+		_draw_moisture_fringe_for_land_cell(world_state, cell_index, cell_state, zoom_band_id)
+		
+func _draw_surface_water_patch(
+	world_state: WorldState,
+	patch_state: WorldPatchState,
+	zoom_band_id: String,
+	drawn_water_cell_keys: Dictionary
+) -> void:
+	var footprint_cell_indices: Array[Vector2i] = _resolve_patch_footprint_cell_indices(
+		world_state,
+		patch_state
+	)
+	if footprint_cell_indices.is_empty():
+		return
+
+	for cell_index: Vector2i in footprint_cell_indices:
+		drawn_water_cell_keys[_build_renderer_cell_key(cell_index)] = true
+
+	var surface_water_type: String = patch_state.surface_water_type.strip_edges()
+	if surface_water_type.is_empty() or surface_water_type == "none":
+		return
+
+	# Keep narrow linear water on the existing cell-based pass for now.
+	if _is_linear_surface_water_type(surface_water_type):
+		for cell_index: Vector2i in footprint_cell_indices:
+			var cell_state: WorldCellState = world_state.get_cell(cell_index)
+			if cell_state == null:
+				continue
+
+			_draw_surface_water_cell(world_state, cell_index, cell_state, zoom_band_id)
+		return
+
+	var fill_color: Color = _resolve_water_fill_color(surface_water_type, zoom_band_id)
+	var core_color: Color = _resolve_water_core_color(surface_water_type, zoom_band_id)
+
+	var fill_radius_pixels: float = _resolve_water_blob_radius_pixels(world_state, zoom_band_id)
+	var core_inset_pixels: float = _resolve_water_core_inset_pixels(surface_water_type, zoom_band_id)
+	var core_radius_pixels: float = maxf(fill_radius_pixels - core_inset_pixels, 2.0)
+
+	_draw_connected_cell_blob(
+		world_state,
+		footprint_cell_indices,
+		fill_color,
+		fill_radius_pixels
+	)
+
+	_draw_connected_cell_blob(
+		world_state,
+		footprint_cell_indices,
+		core_color,
+		core_radius_pixels
+	)
+
+	var shore_thickness_pixels: float = _resolve_shoreline_thickness_pixels(zoom_band_id)
+	var shore_color: Color = Color(
+		COLOR_WATER_EDGE.r,
+		COLOR_WATER_EDGE.g,
+		COLOR_WATER_EDGE.b,
+		0.50
+	)
+
+	for cell_index: Vector2i in footprint_cell_indices:
+		var cell_rect: Rect2 = world_state.cell_index_to_world_rect(cell_index)
+
+		var exposed_left: bool = not _is_surface_water_cell(world_state, cell_index + Vector2i(-1, 0))
+		var exposed_right: bool = not _is_surface_water_cell(world_state, cell_index + Vector2i(1, 0))
+		var exposed_top: bool = not _is_surface_water_cell(world_state, cell_index + Vector2i(0, -1))
+		var exposed_bottom: bool = not _is_surface_water_cell(world_state, cell_index + Vector2i(0, 1))
+
+		if exposed_left:
+			draw_rect(
+				Rect2(cell_rect.position, Vector2(shore_thickness_pixels, cell_rect.size.y)),
+				shore_color,
+				true
+			)
+
+		if exposed_right:
+			draw_rect(
+				Rect2(
+					Vector2(cell_rect.end.x - shore_thickness_pixels, cell_rect.position.y),
+					Vector2(shore_thickness_pixels, cell_rect.size.y)
+				),
+				shore_color,
+				true
+			)
+
+		if exposed_top:
+			draw_rect(
+				Rect2(cell_rect.position, Vector2(cell_rect.size.x, shore_thickness_pixels)),
+				shore_color,
+				true
+			)
+
+		if exposed_bottom:
+			draw_rect(
+				Rect2(
+					Vector2(cell_rect.position.x, cell_rect.end.y - shore_thickness_pixels),
+					Vector2(cell_rect.size.x, shore_thickness_pixels)
+				),
+				shore_color,
+				true
+			)
+
+
+func _draw_connected_cell_blob(
+	world_state: WorldState,
+	cell_indices: Array[Vector2i],
+	fill_color: Color,
+	radius_pixels: float
+) -> void:
+	if cell_indices.is_empty():
+		return
+
+	if radius_pixels <= 0.0:
+		return
+
+	var cell_lookup: Dictionary = {}
+
+	for cell_index: Vector2i in cell_indices:
+		cell_lookup[_build_renderer_cell_key(cell_index)] = true
+
+	for cell_index: Vector2i in cell_indices:
+		var cell_rect: Rect2 = world_state.get_cell_rect_world(cell_index)
+		var cell_center: Vector2 = cell_rect.get_center()
+
+		draw_circle(cell_center, radius_pixels, fill_color)
+
+		var right_cell_index: Vector2i = cell_index + Vector2i(1, 0)
+		if cell_lookup.has(_build_renderer_cell_key(right_cell_index)):
+			var right_center: Vector2 = world_state.get_cell_rect_world(right_cell_index).get_center()
+			var horizontal_bridge_rect: Rect2 = Rect2(
+				Vector2(cell_center.x, cell_center.y - radius_pixels),
+				Vector2(right_center.x - cell_center.x, radius_pixels * 2.0)
+			)
+			draw_rect(horizontal_bridge_rect, fill_color, true)
+
+		var bottom_cell_index: Vector2i = cell_index + Vector2i(0, 1)
+		if cell_lookup.has(_build_renderer_cell_key(bottom_cell_index)):
+			var bottom_center: Vector2 = world_state.get_cell_rect_world(bottom_cell_index).get_center()
+			var vertical_bridge_rect: Rect2 = Rect2(
+				Vector2(cell_center.x - radius_pixels, cell_center.y),
+				Vector2(radius_pixels * 2.0, bottom_center.y - cell_center.y)
+			)
+			draw_rect(vertical_bridge_rect, fill_color, true)
+
+
+func _resolve_water_blob_radius_pixels(world_state: WorldState, zoom_band_id: String) -> float:
+	var half_cell_size_pixels: float = float(world_state.cell_size_pixels) * 0.5
+
+	match zoom_band_id:
+		"far":
+			return maxf(half_cell_size_pixels - 1.0, 3.0)
+		"mid":
+			return maxf(half_cell_size_pixels - 1.5, 3.0)
+		"close":
+			return maxf(half_cell_size_pixels - 2.0, 3.0)
+		_:
+			return maxf(half_cell_size_pixels - 1.5, 3.0)
+
+
+func _build_renderer_cell_key(cell_index: Vector2i) -> String:
+	return "%s,%s" % [cell_index.x, cell_index.y]
 		
 func _draw_surface_water_cell(
 	world_state: WorldState,

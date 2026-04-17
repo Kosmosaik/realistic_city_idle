@@ -1,212 +1,187 @@
 # Realistic Idle City — Development Roadmap v0.1
 
-## Purpose
+> Filename retained for replacement convenience. This version is synced after **Branch 04**.
 
-This roadmap defines the intended implementation branch order for the early-game MVP.
+## 1. Current status snapshot
 
-It now includes a status update after **Branch 02 — simulation clock and run loop**.
+Current branch status:
+- **Branch 00 — repo bootstrap: complete**
+- **Branch 01 — core definitions and IDs: complete enough to close**
+- **Branch 02 — simulation clock and run loop: complete enough to close**
+- **Branch 03 — authoritative world data + authored map loading: complete enough to close**
+- **Branch 04 — authoritative renderer + overlays + fog + camera + inspection: complete enough to close**
+- **Immediate next branch: Branch 05 — audit and cleanup**
+
+Current project now proves:
+- definition-driven bootstrap works
+- deterministic time/run-loop backbone works
+- authored terrain data can load into authoritative runtime state
+- authoritative terrain data can render, inspect, and debug correctly
+- fog / remembered / visible states can be refreshed from runtime reveal sources
+- the project is ready for a cleanup branch before more feature work
+
+---
+
+## 2. Roadmap intent
+
+This roadmap is still meant to keep the game buildable in safe layers:
+
+1. bootstrap shell
+2. definitions / IDs / data vocabulary
+3. deterministic runtime backbone
+4. authoritative world substrate
+5. authoritative terrain rendering / overlays / visibility
+6. cleanup / branch-close audit
+7. procedural terrain foundation
+8. later gameplay and simulation systems on top of stable world truth
+
+The important change is that the project has now **already completed the authored-world + renderer proof path**.  
+That means the immediate need is **not** another large feature branch. It is a short cleanup pass.
 
 ---
 
-## Current status snapshot
-
-- **Branch 00 — repo-bootstrap: complete**
-- **Branch 01 — core-definitions-and-ids: complete enough to close**
-- **Branch 02 — simulation-clock-and-run-loop: complete enough to close**
-- **Next active branch: Branch 03 — world-data-model-and-hand-authored-map**
-
-Current implementation notes:
-- project boots cleanly into the dev world
-- bootstrap context resolves through scenario -> worldgen -> season -> map preset
-- current validated seed pack size: **122 definitions**
-- `TimeService` now owns deterministic tick progression, phase ordering, pause/step/speed controls, scheduled triggers, and queued commands
-- debug HUD exposes Branch 02 calendar/run-loop/determinism state
-- authoritative world cells and authored-map runtime loading are **not** implemented yet
-
----
+## 3. Completed or closeable branches
 
 ## Branch 00 — repo-bootstrap
-
 ### Status
-**Complete**
+Complete.
 
-### Goal
-Create the clean project skeleton with folders, naming conventions, autoloads, scenes, and placeholder test map support.
+### Why it mattered
+It established the Godot shell, autoload structure, boot scene, and an initial dev-facing runtime surface.
 
-### Deliverables
-- Godot project created/cleaned
-- folder structure matching architecture docs
-- autoload registration for core services only
-- boot scene
-- test world scene
-- debug/dev settings asset
-- seed/config file location conventions
-
-### Exit criteria
-- project launches cleanly
-- test scene loads
-- no architecture ambiguity for core folders/scripts
+### Closed outcome
+The project has a stable base entry path and service shell.
 
 ---
 
 ## Branch 01 — core-definitions-and-ids
-
 ### Status
-**Complete enough to close**
+Complete enough to close.
 
-### Goal
-Implement the basic definition-loading and canonical ID infrastructure.
+### Why it mattered
+It created the shared definition vocabulary and validation pipeline needed for all later data-driven work.
 
-### Deliverables
-- definition resource base classes
-- item/process/structure/skill/stage ID validation helpers
-- dictionary-driven enums/constants module
-- definition registry loading from resources
-- duplicate-ID detection
-- cross-reference validation
-- visible validation report
-- definition-driven bootstrap resolution for scenario/worldgen/season/map context
-
-### Actual result summary
-Implemented families/resources now include:
-- stages
-- skills
-- items
-- processes
-- structures
-- scenarios
-- map presets
-- species
-- terrain profiles
-- worldgen profiles
-- season profiles
-- incidents
-- UI panels
-
-Current validated seed pack size: **122 definitions**.
-
-### Exit criteria
-- project can load a non-trivial canonical definition set
-- invalid IDs fail loudly
-- dictionary vocabulary has a code home
-- active bootstrap chain resolves from definitions
+### Closed outcome
+Definitions, IDs, bootstrap resolution, and validation are stable enough for continued development.
 
 ---
 
 ## Branch 02 — simulation-clock-and-run-loop
-
 ### Status
-**Complete enough to close**
+Complete enough to close.
 
-### Goal
-Stand up the authoritative simulation clock and tick sequencing.
+### Why it mattered
+It created the deterministic backbone needed for later survival simulation and visibility refresh.
 
-### Deliverables
-- simulation clock service
-- tick phases
-- pause/speed controls
-- stable boundary hooks for save/debug
-- deterministic update ordering policy
-
-### Actual result summary
-Implemented Branch 02 backbone now includes:
-- deterministic tick progression in `TimeService`
-- stable ordered phases for:
-  - command intake
-  - time-step start
-  - world pre-update
-  - simulation update
-  - visibility refresh
-  - debug snapshot
-  - end-of-tick bookkeeping
-- pause / resume
-- speed controls
-- single-step debug
-- phase listener registration API
-- queued-command queue + processing
-- scheduled-trigger queue + resolution
-- deterministic debug signature/event tracking
-- HUD exposure of phase state, queue previews, and determinism diagnostics
-- external probe proving trigger-to-next-tick-command behavior outside `TimeService`
-
-### Exit criteria
-- game can advance time in deterministic ticks
-- pause/speed works
-- other systems can subscribe safely
+### Closed outcome
+Time progression, phase order, debug stepping, and deterministic queue handling are in place.
 
 ---
 
-## Branch 03 — world-data-model-hand-authored-map
-
+## Branch 03 — authoritative-world-data-and-authored-maps
 ### Status
-**Next**
+Complete enough to close.
 
-### Goal
-Build the simulation-side world representation before fancy generation.
+### Why it mattered
+It replaced “decorative world idea” with actual world truth:
+- cells
+- chunks
+- patches
+- reveal sources
+- authored map loading
+- visibility service integration
 
-### Deliverables
-- cell/patch world data model
-- terrain/elevation/drainage/wetness storage
-- zone primitives
-- hand-authored test map format
-- one balanced starter map
-- one harsh edge-case map
+### Closed outcome
+The game now has an authoritative world substrate that later systems can trust.
 
-### Exit criteria
-- world loads from authored data
-- cells expose terrain facts to systems
-- no procgen required yet
+### Scope note
+The repo currently proves this with one authored reference map. More authored fixtures may still be useful later, but they are no longer required to close the branch.
 
 ---
 
-## Branch 04 — map-renderer-camera-fog
-
+## Branch 04 — authoritative-renderer-camera-overlays-fog
 ### Status
-Not started
+Complete enough to close.
 
-### Goal
-Make the world readable and explorable.
+### Why it mattered
+It proved that the new world substrate is actually usable in practice:
+- renderable
+- inspectable
+- overlay-readable
+- fog-aware
+- navigable with camera controls
 
-### Deliverables
-- layered map rendering
-- zoomable camera
-- aerial/topo/hybrid mode scaffolding
-- fog-of-war and remembered terrain
-- scout/reveal radius support
-- debug terrain overlays
-
-### Exit criteria
-- player can read and navigate the map
-- unknown land stays hidden until revealed
-- rendering respects simulation data
+### Closed outcome
+The project can now visually debug and inspect terrain truth instead of relying on placeholder pixels.
 
 ---
 
-## Branch 05 — npc-core-body-state
+## 4. Immediate next branch
 
+## Branch 05 — audit-and-cleanup
 ### Status
-Not started
+Next.
 
 ### Goal
-Implement the minimal NPC runtime state needed for survival.
+Create a short, explicit cleanup branch between Branch 04 and the next major feature track.
 
-### Deliverables
-- NPC runtime entity/state
-- hunger, thirst, fatigue, wetness, temperature exposure basics
-- emergency override flags
-- simple inventory/carry capacity state
-- basic skill/interest placeholders
+### Must deliver
+- sync the implementation/status docs with the actual codebase after Branch 03–04
+- remove or confirm removal of dead placeholder-only files
+- remove editor temp scene files / stray artifacts from the repo
+- verify scene/script names still match their current responsibilities
+- verify the debug controls and current renderer stack are documented correctly
+- add a brief manual verification note for the closeout if needed
+- leave the project in a clean handoff state for the next feature branch
+
+### Example cleanup targets already visible
+- stale references to `map_placeholder.gd` in docs
+- any leftover dead placeholder renderer script in older working copies
+- `scenes/world/test_world_scene.tscn*.tmp`
+- any outdated branch-status wording that still says Branch 02 or Branch 03 is “next”
 
 ### Exit criteria
-- one NPC can exist in authoritative runtime state
-- core survival variables update through the simulation clock
+- docs match the actual current project
+- repo no longer contains obviously stale temporary scene artifacts
+- branch naming / next-step language is consistent
+- the next GPT / developer can start from a cleaner baseline without re-auditing everything first
 
 ---
 
-## Roadmap note
+## 5. Preferred next feature direction after cleanup
 
-The current project discipline is still correct:
-- Branch 00 and Branch 01 laid the shell and vocabulary
-- Branch 02 laid the deterministic time backbone and inspectable run loop
-- the next safe move is authoritative world data + authored maps
-- do not skip ahead into NPC/runtime gameplay depth before Branch 03 lands
+After Branch 05 closes, the preferred next feature direction is:
+
+## Terrain procgen foundation
+Use `docs/realistic_idle_city_terrain_generation_branch_plan_v0_1.md` as the active sub-plan.
+
+The next feature branch should begin the **first structured terrain generator track**, rather than jumping directly into unrelated gameplay systems.
+
+Why:
+- Branch 03 gave the authoritative terrain substrate
+- Branch 04 gave the renderer, overlays, and visibility debug tools
+- that means the project is now finally in a safe position to start procedural terrain generation without guessing blindly
+
+---
+
+## 6. Roadmap guardrails
+
+- do not reintroduce decorative placeholder terrain as hidden authority
+- do not bury runtime truth in UI/presentation scripts
+- do not start large new gameplay systems from a dirty branch-close state
+- keep progression realism-oriented and condition-driven instead of over-hardcoding stage-gated play
+- keep later feature branches small enough that closeout and handoff remain easy
+
+---
+
+## 7. Final position
+
+The project is no longer in “bootstrap only” territory.
+
+It now has:
+- stable definitions
+- a deterministic runtime backbone
+- authoritative world data
+- authoritative world rendering and inspection
+
+That is enough progress that a dedicated **audit/cleanup branch** is the right move before continuing.

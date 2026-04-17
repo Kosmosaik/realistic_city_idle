@@ -4,13 +4,17 @@
 
 This document breaks the terrain work into **small, implementation-sized branches** that fit the existing roadmap instead of replacing it.
 
-It assumes:
+It now assumes:
 - **Branch 00** is complete
-- the project still follows the roadmap logic that says **authoritative world data and hand-authored maps come before fancy procgen**
+- **Branch 01** is complete enough to close
+- **Branch 02** is complete enough to close
+- **Branch 03** is complete enough to close
+- **Branch 04** is complete enough to close
+- the project still follows the logic that says **authoritative world data and inspectable authored maps come before real procgen**
 - the terrain system must stay **simulation-first**, **debuggable**, and **compatible with early survival realism**
 
-This plan therefore does **not** jump straight to “make random maps.”
-It first builds the terrain substrate, then the overlays and validators, then the first structured generator.
+This plan therefore still does **not** jump straight to “make random maps.”
+It first establishes that the project now already has the substrate and overlay/debug proof, then it inserts a cleanup branch, then it starts the structured generator track.
 
 ---
 
@@ -18,14 +22,15 @@ It first builds the terrain substrate, then the overlays and validators, then th
 
 ## 1.1 Why terrain generation is split this way
 
-The project docs already imply the correct order:
+The project has now already proved the correct order:
+
 1. define IDs and data vocabulary
 2. define authoritative world data
 3. load hand-authored maps
 4. render and inspect them
 5. only then generate terrain procedurally
 
-That is the safest order because:
+That is still the safest order because:
 - procgen without trusted terrain data becomes hard to debug
 - procgen without overlays becomes guesswork
 - procgen without a reference authored map makes it hard to know whether bad results come from logic or tuning
@@ -57,243 +62,38 @@ This branch plan is a **sub-plan** inside the larger roadmap.
 It maps like this:
 - **Branch 01** stays as core definitions and IDs
 - **Branch 02** stays as simulation clock and run loop
-- **Branch 03** becomes the terrain substrate + authored reference maps foundation
-- **Branch 04** becomes renderer + fog + overlays + inspectors
-- **new terrain-procgen branches after Branch 04** handle the first structured terrain generator
+- **Branch 03** is now the authoritative terrain/world substrate + authored reference map foundation
+- **Branch 04** is now the renderer + fog + overlays + inspectors proof layer
+- **Branch 05** should be a short **audit-and-cleanup** closeout branch
+- **terrain procgen branches begin after that cleanup branch**
 
-That means we do **not** overthrow the current roadmap.
-We refine it.
-
----
-
-# 3. Recommended branch sequence
-
-## Branch 03A — terrain-schema-core
-
-### Goal
-Create the authoritative terrain cell/chunk/patch schema in code.
-
-### Depends on
-- Branch 01
-- Branch 02
-
-### Deliverables
-- terrain enums / canonical value sets
-- terrain cell data object
-- terrain chunk data object
-- terrain patch data object
-- static vs derived vs mutable field split
-- serialization-ready structure
-
-### Must include
-- elevation
-- slope
-- landform
-- surface water type
-- drainage
-- wetness tendency
-- ground firmness
-- vegetation community
-- move/haul/build/site-related placeholders
-- reveal state hooks
-
-### Must not include
-- random terrain generation yet
-- renderer-specific logic in the schema
-- asset references inside terrain truth
-
-### Exit criteria
-- terrain records can be created, stored, and inspected
-- schema compiles cleanly
-- no inferred-type shortcuts
-- save/load compatibility path is obvious
+That means we still do **not** overthrow the roadmap.
+We refine it based on what the repo now actually proves.
 
 ---
 
-## Branch 03B — hand-authored-terrain-map-format
+# 3. Recommended branch sequence from here
+
+## Branch 05 — audit-and-cleanup
 
 ### Goal
-Stand up one trustworthy authored terrain map pipeline before procgen.
-
-### Depends on
-- Branch 03A
+Close the authored-world + renderer foundation cleanly before starting procgen work.
 
 ### Deliverables
-- hand-authored map file/schema format
-- one balanced early survival reference map
-- one harsh edge-case map
-- loader that populates terrain cells/chunks/patch placeholders
+- doc sync after Branch 03–04
+- remove stale placeholder references/artifacts
+- remove temp scene files / branch debris
+- verify the current authoritative terrain stack is documented correctly
+- leave a cleaner baseline for the first procgen branch
 
 ### Why this branch matters
-This becomes the calibration target for later procgen.
-If the authored map feels right and the procgen map feels wrong, the generator is the problem.
+Procgen work benefits from a clean baseline.  
+If the repo is already carrying stale files, outdated docs, and branch-close drift, debugging generation work gets noisier than it needs to be.
 
 ### Exit criteria
-- the world loads from authored terrain data
-- terrain cells expose useful facts to systems
-- two different authored maps can load without code changes
-
----
-
-## Branch 03C — terrain-derived-fields-v1
-
-### Goal
-Derive first-pass practical terrain values from the authored terrain substrate.
-
-### Depends on
-- Branch 03B
-
-### Deliverables
-- move cost derivation
-- haul cost derivation
-- buildability derivation
-- sleep suitability derivation
-- fire suitability derivation
-- sanitation suitability derivation
-- local site score contribution derivation
-
-### Must not include
-- final task/AI behavior
-- settlement construction systems
-
-### Exit criteria
-- changing terrain input changes practical outputs predictably
-- wet low ground is visibly penalized
-- dry benches and firm ground read better for camp use
-
----
-
-## Branch 03D — terrain-patch-extraction-and-site-candidates
-
-### Goal
-Turn cell-level truth into patch-level terrain meaning.
-
-### Depends on
-- Branch 03C
-
-### Deliverables
-- patch extraction logic
-- patch summaries
-- candidate camp-site patches
-- garden-candidate patches
-- wet / hazard patch summaries
-- patch-level site score
-
-### Why this branch matters
-This is where “good site” stops being a magic marker and becomes a derived property of the land.
-
-### Exit criteria
-- contiguous terrain produces coherent patches
-- multiple viable site candidates can exist
-- no single-point “site object” is required for logic
-
----
-
-## Branch 04A — terrain-overlay-renderer
-
-### Goal
-Render debug overlays directly from authoritative terrain data.
-
-### Depends on
-- Branch 03A to 03D
-
-### Deliverables
-- overlay rendering layer
-- elevation overlay
-- drainage overlay
-- wetness overlay
-- vegetation overlay
-- buildability overlay
-- site score overlay
-- patch boundary overlay
-
-### Must include
-- overlay switching without full world regen
-- clear legend behavior or inspector-based reading
-
-### Exit criteria
-- overlays reflect terrain truth, not duplicated state
-- changing terrain values updates overlays correctly
-- terrain can be tuned without relying on final art
-
----
-
-## Branch 04B — terrain-inspector-and-debug-ui
-
-### Goal
-Make terrain inspectable at cell and patch level.
-
-### Depends on
-- Branch 04A
-
-### Deliverables
-- cell inspector panel
-- patch inspector panel
-- hover/click terrain query
-- compact debug panel integration
-- terrain field readout
-
-### Must include
-- coordinate readout
-- terrain classes
-- practical suitability values
-- reveal state
-- patch summaries where available
-
-### Exit criteria
-- one click explains why a location is good or bad
-- inspector matches authoritative data exactly
-- no hidden duplicated terrain logic in UI
-
----
-
-## Branch 04C — fog-memory-and-terrain-knowledge
-
-### Goal
-Connect terrain truth to exploration state.
-
-### Depends on
-- Branch 04A
-- Branch 04B
-
-### Deliverables
-- reveal state integration with terrain cells
-- unknown / remembered / visible display rules
-- remembered terrain tinting
-- survey quality hooks
-- terrain confidence hooks
-
-### Exit criteria
-- unknown land hides detailed truth
-- remembered land stays partially informative
-- visible land shows full terrain interpretation
-
----
-
-## Branch 04D — terrain-object-placement-validation
-
-### Goal
-Make terrain authoritative for nature/object placement.
-
-### Depends on
-- Branch 03A
-- Branch 03C
-- Branch 04A
-
-### Deliverables
-- placement validation rules for trees
-- wet-margin placement rules
-- rocky resource placement rules
-- conflict debug overlay
-- generation warning logging
-
-### Why this branch matters
-It closes the exact hole already seen in the prototype: trees in water and terrain-ignorant placement.
-
-### Exit criteria
-- open water rejects ordinary tree placement
-- wet margins and rocky patches influence placement sensibly
-- invalid placements surface as warnings/overlays
+- docs match code
+- stale placeholder/temp artifacts are gone
+- the next terrain branch starts from a cleaner base
 
 ---
 
@@ -303,8 +103,8 @@ It closes the exact hole already seen in the prototype: trees in water and terra
 Create the first procedural generator shell for one terrain family.
 
 ### Depends on
-- Branch 03A to 03D
-- Branch 04A to 04D
+- closed Branch 05 cleanup
+- completed Branch 03–04 foundation
 
 ### Deliverables
 - seed input
@@ -419,93 +219,50 @@ Make generated maps consistently playable and believable.
 - map-summary debug report
 - harsh/balanced seed test set
 
-### Validation examples
-- reachable water exists
-- at least one dry viable site patch exists
-- not all useful resources cluster on one perfect cell block
-- no ordinary trees spawn in open water
-- terrain communities are spatially coherent
-
 ### Exit criteria
-- repeated seed tests mostly pass without manual cleanup
-- obvious “gamey” maps are rejected or flagged
-- tuning becomes data-driven instead of visual guesswork
+- obvious bad starts can be detected
+- generated maps stay within the intended early-game realism envelope
+- the generator becomes tunable instead of mysterious
 
 ---
 
-# 4. Suggested implementation order in practice
+# 4. Earlier branch breakdown retained for historical context
 
-If you want the smallest safe progression, implement in this exact order:
+The earlier conceptual split is still useful as historical reasoning:
 
-1. Branch 03A
-2. Branch 03B
-3. Branch 04A
-4. Branch 04B
-5. Branch 03C
-6. Branch 03D
-7. Branch 04C
-8. Branch 04D
-9. Branch 05A
-10. Branch 05B
-11. Branch 05C
-12. Branch 05D
-13. Branch 05E
+## Branch 03A — terrain-schema-core
+Created the authoritative terrain cell/chunk/patch schema in code.
 
-Why this order works:
-- it gives you inspectable terrain truth early
-- it keeps procgen from becoming a black box
-- it solves known prototype issues before procedural complexity increases
+## Branch 03B — hand-authored-terrain-map-format
+Established a trustworthy authored terrain map pipeline before procgen.
 
----
+## Branch 03C — terrain-derived-fields-v1
+Derived practical terrain values from authored terrain truth.
 
-# 5. Minimum branch boundaries
+## Branch 03D — terrain-patch-extraction-and-site-candidates
+Turned cell-level truth into patch-level terrain meaning.
 
-Each branch should ideally:
-- touch one coherent subsystem area
-- have one clear before/after behavior change
-- include acceptance checks
-- leave the game runnable
-- avoid mixing schema, UI, and procgen in the same commit unless the branch explicitly exists to connect them
+## Branch 04A — terrain-overlay-renderer
+Rendered debug overlays directly from authoritative terrain data.
 
-Avoid these bad branch mixes:
-- terrain schema + NPC needs + item runtime in one branch
-- fog-of-war + task system + generator tuning in one branch
-- pretty map rendering changes mixed with terrain truth refactors
+## Branch 04B — terrain-inspector-and-debug-ui
+Made terrain inspectable at cell and patch level.
+
+## Branch 04C — fog-memory-and-terrain-knowledge
+Connected terrain truth to exploration state.
+
+## Branch 04D — terrain-object-placement-validation
+Made terrain authoritative for nature/object placement validation.
+
+These slices have now effectively been proven in consolidated Branch 03–04 implementation work.
 
 ---
 
-# 6. Risks and anti-patterns
+# 5. Final position
 
-## 6.1 Biggest risk
+The project is now in the right place to begin real procgen work **after** a short cleanup branch.
 
-Jumping straight to Branch 05A-style procgen before Branch 03/04 terrain truth and overlays are stable.
-
-That would likely cause:
-- hidden bad assumptions
-- hard-to-read bugs
-- repeated visual retuning without understanding the data problem
-
-## 6.2 Other anti-patterns
-
-- building the generator around art needs instead of terrain truth
-- adding multiple terrain families before one feels believable
-- placing resources as decorative scatter instead of terrain consequence
-- keeping site quality as a spawned marker instead of a derived patch property
-- hiding terrain bugs because the renderer looks nice
-
----
-
-# 7. Practical recommendation
-
-The next best terrain-related branch after the current state is:
-
-## **Branch 03A — terrain-schema-core**
-
-That should be followed immediately by:
-- **Branch 03B — hand-authored-terrain-map-format**
-- **Branch 04A — terrain-overlay-renderer**
-- **Branch 04B — terrain-inspector-and-debug-ui**
-
-Only after those are working should the first procedural terrain branch begin.
-
-That keeps the project aligned with its docs, future-proof, data-driven, and realistic.
+That is the important conclusion:
+- not “keep polishing authored map docs forever”
+- not “jump to unrelated gameplay systems”
+- but “close the current foundation cleanly, then start the first structured terrain generator”
