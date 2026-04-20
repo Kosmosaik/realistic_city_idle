@@ -1,176 +1,154 @@
 # Realistic Idle City — Godot Project / Scene Architecture v0.1
-
-> Filename retained for replacement convenience. This version updates the architecture note after **Branch 04**.
+_Last synced:_ 2026-04-17
 
 ## 1. Purpose
 
-This document defines the current Godot-side scene/runtime structure for the early playable foundation.
+This document describes the current implementation-facing scene/script architecture after the Branch 05 cleanup pass.
 
-It explains:
-- what scenes currently exist
-- what autoloads own
-- what runtime files are authoritative
-- what presentation files merely read and visualize that truth
-
----
-
-## 2. Current scene stack
-
-Current entry path:
-- `scenes/bootstrap/boot_scene.tscn`
-- `scenes/world/test_world_scene.tscn`
-
-Current world-scene support is created/ensured by `WorldRootController`:
-- `WorldCameraController`
-- `AuthoritativeTerrainRenderer`
-- `TerrainOverlayRenderer`
-- `TerrainOverlayOutlineRenderer`
-- `TerrainInspectorPanel`
-- `DevHud`
-- `WorldCellInspectorProbe`
-
-Important current reality:
-- `test_world_scene.tscn` is intentionally very light
-- most active scene-side wiring is created by the controller script
-- the world scene is a presentation shell, not the authority
+It focuses on:
+- how bootstrapping currently flows
+- where runtime authority lives
+- how presentation/debug layers consume that runtime truth
+- where the next procedural terrain branch should connect
 
 ---
 
-## 3. Autoload shell
+## 2. Current architecture snapshot
 
-Current autoloads:
-- `EventBus`
-- `TelemetryService`
-- `SaveService`
-- `TimeService`
-- `DefinitionRegistry`
-- `SimRoot`
-- `AppRoot`
+The active runtime path is now:
 
-Current responsibility split:
-- `DefinitionRegistry` = static definition loading / validation
-- `SimRoot` = resolved bootstrap context + active `WorldState` ownership / access
-- `TimeService` = authoritative calendar + deterministic tick/run loop
-- world runtime files = authoritative loaded world substrate
-- world scene = presentation/dev shell that reads from that substrate
+`BootScene`  
+→ resolves `SimRoot`, `DefinitionRegistry`, `TimeService`, and other autoload services  
+→ resolves active scenario/stage/map/worldgen/season definitions  
+→ builds `WorldState` from the active definitions  
+→ binds world services/state into presentation consumers  
+→ world renderers / overlays / HUD / terrain inspector read from runtime truth
+
+This is the correct foundation for the next branch.
 
 ---
 
-## 4. Presentation-vs-authority rule
+## 3. Runtime authority
 
-Current rule:
-- the world scene is **not** the authoritative simulation state
-- renderers are **not** authoritative terrain truth
-- UI panels are **not** authoritative data stores
-- runtime world files own cell/chunk/patch/reveal truth
-- autoload/runtime services own active session truth
+### 3.1 `SimRoot`
+`SimRoot` is the current top-level bootstrap/runtime coordinator.
 
-Current authoritative terrain/world path is:
-- definitions resolve bootstrap context
-- `SimRoot` loads and stores `WorldState`
-- `WorldVisibilityService` refreshes reveal/fog state
-- presentation scripts query the active world state and render it
+It is responsible for:
+- holding active definition IDs
+- coordinating bootstrap resolution
+- building/owning the active `WorldState`
+- exposing hovered/selected debug cell state
+- exposing overlay/debug mode state for presentation consumers
 
----
+It should continue orchestrating high-level flow, but it should **not** absorb full procedural generator internals.
 
-## 5. Current world scene doctrine
+### 3.2 `WorldState`
+`WorldState` is the world authority for the current local map.
 
-The current world scene is allowed to:
-- host the active camera
-- render world truth
-- render overlay/debug views
-- host the HUD and terrain inspector
-- host cell hover/select probing
-- surface data from runtime/autoload services
+It holds:
+- cell state
+- patch state
+- chunk state
+- reveal sources
+- authored terrain object records
+- generation warnings/debug snapshots
 
-The current world scene should **not**:
-- become the source of truth for simulation state
-- own canonical terrain facts
-- own hidden progression state
-- implement separate time loops
-- duplicate terrain logic that already exists in runtime state
+Renderers and debug UIs should continue reading from this shared world truth.
 
 ---
 
-## 6. Bootstrap chain rule
+## 4. Scene / script role map
 
-The active bootstrap chain should stay definition-driven.
+## 4.1 Boot and autoload layer
+- `autoload/sim_root.gd` — main runtime coordination and world-state lifecycle
+- `autoload/definition_registry.gd` — definition loading/validation
+- `autoload/time_service.gd` — time/season/tick orchestration
+- `scripts/core/boot_scene.gd` — startup scene entry point
+- `scripts/core/boot_defaults.gd` — default boot identifiers/fallback values
 
-Current intended rule:
-- scenario chooses stage + map preset + worldgen profile
-- worldgen profile chooses season profile / terrain profile context
-- season profile bootstraps initial calendar defaults
-- `SimRoot` stores resolved active context
-- `TimeService` exposes resolved calendar/run-loop state
-- authored map loading builds the authoritative `WorldState`
-- the world scene reads that resolved runtime state
+## 4.2 Runtime world layer
+- `scripts/runtime/world/world_state.gd`
+- `scripts/runtime/world/world_cell_state.gd`
+- `scripts/runtime/world/world_patch_state.gd`
+- `scripts/runtime/world/world_chunk_state.gd`
+- `scripts/runtime/world/world_reveal_source_state.gd`
 
-Do not replace this with loose hardcoded startup state in scene scripts.
+## 4.3 Authored world build path
+- `scripts/runtime/world/authored_map_loader.gd`
+- `scripts/runtime/world/authored_map_fixture_validator.gd`
+- `scripts/runtime/world/authored_map_stamp_applicator.gd`
+- `scripts/runtime/world/authored_reveal_source_loader.gd`
+- `scripts/runtime/world/authored_terrain_object_loader.gd`
 
----
+This path should remain intact as the authored-world reference implementation.
 
-## 7. Current runtime flow rule
-
-The deterministic runtime clock belongs to `TimeService`.
-
-Current phase order:
-1. command intake
-2. time-step start
-3. world pre-update
-4. simulation update
-5. visibility refresh
-6. debug snapshot
-7. end-of-tick bookkeeping
-
-External systems should subscribe through stable APIs/signals/listeners rather than creating parallel loops in scene code.
-
-Important current architectural note:
-- `visibility refresh` now has a proper runtime home
-- fog/remembered/visible display is downstream of that runtime phase, not a standalone scene hack
-
----
-
-## 8. Current world substrate
-
-The active world runtime currently centers on:
-- `WorldState`
-- `WorldCellState`
-- `WorldChunkState`
-- `WorldPatchState`
-- `WorldRevealSourceState`
-- `AuthoredMapLoader`
-- `WorldVisibilityService`
-
-That means the architecture has already crossed the important line from:
-- “debug picture of a world”
-to:
-- “real world data that a debug picture reads”
+## 4.4 Presentation / debug layer
+- `scripts/presentation/world/authoritative_terrain_renderer.gd`
+- `scripts/presentation/world/terrain_overlay_renderer.gd`
+- `scripts/presentation/world/terrain_overlay_outline_renderer.gd`
+- `scripts/presentation/world/terrain_debug_visual_config.gd`
+- `scripts/presentation/ui/dev_hud.gd`
+- `scripts/presentation/ui/dev_hud_text_formatter.gd`
+- `scripts/presentation/ui/terrain_inspector_panel.gd`
+- `scripts/presentation/sim_root_locator.gd`
 
 ---
 
-## 9. Immediate next architecture concern
+## 5. What is no longer part of the active architecture
 
-The next branch should be a cleanup branch, not a structural reinvention.
+The retired placeholder-world path is no longer part of the active intended architecture.
 
-The architecture work that matters next is:
-- remove stale placeholder-only debris
-- keep documentation aligned with current runtime truth
-- clean up temp scene artifacts
-- preserve the existing clean split between:
-  - definitions
-  - runtime truth
-  - presentation readers
+Interpret any old references to placeholder map rendering as:
+- historical scaffold only
+- not the current source of truth
+- not the correct place to extend new systems from
+
+Also:
+- temp `test_world_scene.tscn*.tmp` files are not part of the repo architecture and should stay out
 
 ---
 
-## 10. Final position
+## 6. Architectural rule for the next branch
 
-The project should continue as:
-- resource-defined static content
-- small autoload/service shell
-- deterministic runtime truth outside presentation scenes
-- authoritative world runtime objects
-- presentation layers that read, render, and inspect that truth
-- explicit debug-friendly boundaries
+The next branch should add a **second world-build path**, not replace the first one.
 
-That keeps the project aligned with the realism-first design while remaining practical to build incrementally.
+Recommended structure:
+- authored maps continue through `AuthoredMapLoader`
+- procedural maps go through a new procedural world-build orchestrator
+- both paths output the same `WorldState` structure
+- renderers/HUD/inspector stay agnostic about where the world came from
+
+This is the key architecture rule that keeps the project future-proof.
+
+---
+
+## 7. Presentation/debug expectations
+
+Presentation-side systems should continue to:
+- read debug selection/hover state from `SimRoot`
+- read world truth from `WorldState`
+- read overlay-mode metadata from `TerrainDebugVisualConfig`
+- avoid maintaining parallel gameplay truth
+
+The recent overlay-mode fixes only reinforce this rule:
+visual controls should stay synchronized because they share the same debug state source.
+
+---
+
+## 8. Immediate next connection point
+
+Branch 06 procedural terrain generation should connect at the world-build step currently owned by `SimRoot.build_world_state_from_active_definitions()`.
+
+That is the correct integration seam.
+
+The new branch should:
+- preserve the authored load path
+- choose authored vs procedural build mode from definitions
+- build the world before presentation consumers initialize against it
+
+---
+
+## 9. Final note
+
+The current architecture is clean enough to move forward.
+The right next move is procedural terrain generation through a new world-build path, not a broad scene/script rewrite.

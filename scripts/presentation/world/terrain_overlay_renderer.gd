@@ -1,8 +1,13 @@
 extends Node2D
 class_name TerrainOverlayRenderer
 
-const PATCH_BOUNDARY_COLOR: Color = Color(1.0, 1.0, 1.0, 0.75)
-const OUTLINE_WIDTH: float = 2.0
+const SIM_ROOT_LOCATOR_SCRIPT: Script = preload("res://scripts/presentation/sim_root_locator.gd")
+
+const TERRAIN_DEBUG_VISUAL_CONFIG_SCRIPT: Script = preload(
+	"res://scripts/presentation/world/terrain_debug_visual_config.gd"
+)
+
+var _terrain_debug_visual_config: TerrainDebugVisualConfig = TERRAIN_DEBUG_VISUAL_CONFIG_SCRIPT.new()
 
 var _last_world_id: String = ""
 var _last_overlay_mode_id: String = "off"
@@ -116,6 +121,16 @@ func _draw_elevation_overlay(world_state: WorldState) -> void:
 	var elevation_bounds: Dictionary = _get_elevation_bounds(world_state)
 	var min_elevation_step: int = int(elevation_bounds.get("min_elevation_step", 0))
 	var max_elevation_step: int = int(elevation_bounds.get("max_elevation_step", 0))
+	var elevation_gradient: Dictionary = _terrain_debug_visual_config.get_elevation_overlay_gradient()
+
+	var low_color: Color = elevation_gradient.get(
+		"low_color",
+		Color(0.10, 0.20, 0.32, 0.32)
+	) as Color
+	var high_color: Color = elevation_gradient.get(
+		"high_color",
+		Color(0.78, 0.60, 0.30, 0.55)
+	) as Color
 
 	for y: int in range(world_state.world_height_cells):
 		for x: int in range(world_state.world_width_cells):
@@ -131,8 +146,8 @@ func _draw_elevation_overlay(world_state: WorldState) -> void:
 			)
 
 			var overlay_color: Color = _lerp_color(
-				Color(0.10, 0.20, 0.32, 0.32),
-				Color(0.78, 0.60, 0.30, 0.55),
+				low_color,
+				high_color,
 				normalized_value
 			)
 
@@ -147,17 +162,9 @@ func _draw_drainage_overlay(world_state: WorldState) -> void:
 				continue
 
 			var drainage_class: String = cell_state.drainage_class
-			var overlay_color: Color = Color(0.40, 0.40, 0.40, 0.18)
-
-			match drainage_class:
-				"poor":
-					overlay_color = Color(0.95, 0.35, 0.20, 0.45)
-				"moderate":
-					overlay_color = Color(0.92, 0.75, 0.20, 0.38)
-				"good":
-					overlay_color = Color(0.20, 0.78, 0.52, 0.34)
-				_:
-					overlay_color = Color(0.50, 0.50, 0.50, 0.18)
+			var overlay_color: Color = _terrain_debug_visual_config.resolve_drainage_overlay_color(
+				drainage_class
+			)
 
 			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
 
@@ -170,17 +177,9 @@ func _draw_wetness_overlay(world_state: WorldState) -> void:
 				continue
 
 			var wetness_tendency: String = cell_state.wetness_tendency
-			var overlay_color: Color = Color(0.45, 0.45, 0.45, 0.16)
-
-			match wetness_tendency:
-				"dry":
-					overlay_color = Color(0.90, 0.78, 0.42, 0.30)
-				"damp":
-					overlay_color = Color(0.38, 0.74, 0.58, 0.30)
-				"wet":
-					overlay_color = Color(0.22, 0.55, 0.95, 0.42)
-				_:
-					overlay_color = Color(0.55, 0.55, 0.55, 0.16)
+			var overlay_color: Color = _terrain_debug_visual_config.resolve_wetness_overlay_color(
+				wetness_tendency
+			)
 
 			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
 
@@ -193,21 +192,9 @@ func _draw_vegetation_overlay(world_state: WorldState) -> void:
 				continue
 
 			var vegetation_cover_class: String = cell_state.vegetation_cover_class
-			var overlay_color: Color = Color(0.40, 0.60, 0.40, 0.18)
-
-			match vegetation_cover_class:
-				"none":
-					overlay_color = Color(0.65, 0.60, 0.48, 0.16)
-				"sparse":
-					overlay_color = Color(0.62, 0.76, 0.42, 0.22)
-				"grass":
-					overlay_color = Color(0.42, 0.82, 0.32, 0.28)
-				"brush":
-					overlay_color = Color(0.24, 0.60, 0.24, 0.34)
-				"woodland":
-					overlay_color = Color(0.14, 0.42, 0.18, 0.40)
-				_:
-					overlay_color = Color(0.30, 0.70, 0.30, 0.22)
+			var overlay_color: Color = _terrain_debug_visual_config.resolve_vegetation_overlay_color(
+				vegetation_cover_class
+			)
 
 			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
 
@@ -219,9 +206,9 @@ func _draw_buildability_overlay(world_state: WorldState) -> void:
 			if cell_state == null:
 				continue
 
-			var overlay_color: Color = Color(0.85, 0.20, 0.20, 0.30)
-			if cell_state.is_buildable:
-				overlay_color = Color(0.18, 0.78, 0.32, 0.28)
+			var overlay_color: Color = _terrain_debug_visual_config.resolve_buildability_overlay_color(
+				cell_state.is_buildable
+			)
 
 			draw_rect(world_state.cell_index_to_world_rect(cell_index), overlay_color, true)
 
@@ -340,6 +327,8 @@ func _draw_patch_footprint_outline(
 	if patch_cell_indices.is_empty():
 		return
 
+	var line_width_world: float = _terrain_debug_visual_config.get_patch_boundary_line_width_world()
+
 	var cell_lookup: Dictionary = {}
 	for cell_index: Vector2i in patch_cell_indices:
 		cell_lookup[_build_patch_cell_lookup_key(cell_index)] = true
@@ -357,14 +346,13 @@ func _draw_patch_footprint_outline(
 		var east_key: String = _build_patch_cell_lookup_key(cell_index + Vector2i(1, 0))
 
 		if not cell_lookup.has(north_key):
-			draw_line(top_left, top_right, boundary_color, 1.0)
+			draw_line(top_left, top_right, boundary_color, line_width_world)
 		if not cell_lookup.has(south_key):
-			draw_line(bottom_left, bottom_right, boundary_color, 1.0)
+			draw_line(bottom_left, bottom_right, boundary_color, line_width_world)
 		if not cell_lookup.has(west_key):
-			draw_line(top_left, bottom_left, boundary_color, 1.0)
+			draw_line(top_left, bottom_left, boundary_color, line_width_world)
 		if not cell_lookup.has(east_key):
-			draw_line(top_right, bottom_right, boundary_color, 1.0)
-
+			draw_line(top_right, bottom_right, boundary_color, line_width_world)
 
 func _build_patch_cell_lookup_key(cell_index: Vector2i) -> String:
 	return "%s,%s" % [cell_index.x, cell_index.y]
@@ -381,49 +369,22 @@ func _normalize_site_score(site_score: float) -> float:
 	return clamp(site_score / 100.0, 0.0, 1.0)
 
 func _resolve_site_score_fill_color(normalized_site_score: float) -> Color:
-	var clamped_score: float = clamp(normalized_site_score, 0.0, 1.0)
-
-	var low_color: Color = Color(0.84, 0.30, 0.20, 0.26)
-	var mid_color: Color = Color(0.95, 0.74, 0.24, 0.24)
-	var high_color: Color = Color(0.24, 0.78, 0.40, 0.24)
-
-	if clamped_score <= 0.5:
-		return _lerp_color(low_color, mid_color, clamped_score / 0.5)
-
-	return _lerp_color(mid_color, high_color, (clamped_score - 0.5) / 0.5)
+	return _terrain_debug_visual_config.resolve_site_score_fill_color(normalized_site_score)
 
 func _resolve_site_score_outline_color(normalized_site_score: float) -> Color:
-	var clamped_score: float = clamp(normalized_site_score, 0.0, 1.0)
-
-	var low_color: Color = Color(0.92, 0.32, 0.24, 0.60)
-	var mid_color: Color = Color(1.0, 0.82, 0.28, 0.58)
-	var high_color: Color = Color(0.32, 0.92, 0.48, 0.60)
-
-	if clamped_score <= 0.5:
-		return _lerp_color(low_color, mid_color, clamped_score / 0.5)
-
-	return _lerp_color(mid_color, high_color, (clamped_score - 0.5) / 0.5)
+	return _terrain_debug_visual_config.resolve_site_score_outline_color(normalized_site_score)
 
 func _resolve_patch_outline_color(patch_state: WorldPatchState) -> Color:
-	if patch_state.surface_water_type != "none":
-		return Color(0.28, 0.68, 1.0, 0.85)
-
-	if patch_state.is_buildable:
-		return Color(0.40, 1.0, 0.55, 0.85)
-
-	return PATCH_BOUNDARY_COLOR
+	return _terrain_debug_visual_config.resolve_patch_outline_color(
+		patch_state.surface_water_type,
+		patch_state.is_buildable
+	)
 
 func _resolve_fog_memory_overlay_color(cell_state: WorldCellState) -> Color:
-	# Visible cells stay almost clear so terrain remains readable.
-	if cell_state.is_currently_visible:
-		return Color(0.85, 1.0, 0.90, 0.06)
-
-	# Remembered but not currently visible cells get a muted cool tint.
-	if cell_state.is_revealed:
-		return Color(0.40, 0.52, 0.78, 0.24)
-
-	# Fully hidden cells get a darker obscuring tint.
-	return Color(0.03, 0.04, 0.06, 0.56)
+	return _terrain_debug_visual_config.resolve_fog_memory_overlay_color(
+		cell_state.is_currently_visible,
+		cell_state.is_revealed
+	)
 
 func _normalize_scalar(value: float, min_value: float, max_value: float) -> float:
 	if max_value <= min_value:
@@ -479,4 +440,4 @@ func _is_debug_force_full_visibility_enabled() -> bool:
 	return bool(sim_root.call("is_debug_force_full_visibility_enabled"))
 
 func _sim_root() -> Node:
-	return get_node_or_null("/root/SimRoot")
+	return SIM_ROOT_LOCATOR_SCRIPT.get_sim_root(self)

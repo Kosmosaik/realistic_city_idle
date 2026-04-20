@@ -1,6 +1,8 @@
 extends CanvasLayer
 class_name TerrainInspectorPanel
 
+const SIM_ROOT_LOCATOR_SCRIPT: Script = preload("res://scripts/presentation/sim_root_locator.gd")
+
 const PANEL_WIDTH: float = 430.0
 const PANEL_MARGIN: float = 16.0
 
@@ -421,4 +423,4 @@ func _is_pointer_inside_panel() -> bool:
 	return _panel_container.get_global_rect().has_point(mouse_position)
 
 func _sim_root() -> Node:
-	return get_node_or_null("/root/SimRoot")
+	return SIM_ROOT_LOCATOR_SCRIPT.get_sim_root(self)

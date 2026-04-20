@@ -39,6 +39,10 @@ const SPEED_MULTIPLIERS: Array[int] = [1, 2, 4, 8]
 const INTERNAL_TRIGGER_ID_NEXT_DAY_START: String = "internal.next_day_start"
 const INTERNAL_TRIGGER_TYPE_DAY_START: String = "trigger.calendar.day_start"
 
+const TIME_COMMAND_QUEUE_SCRIPT: Script = preload("res://scripts/runtime/time/time_command_queue.gd")
+const TIME_TRIGGER_QUEUE_SCRIPT: Script = preload("res://scripts/runtime/time/time_trigger_queue.gd")
+const TIME_RANDOM_STREAM_MANAGER_SCRIPT: Script = preload("res://scripts/runtime/time/time_random_stream_manager.gd")
+
 var tick_index: int = DEFAULT_TICK_INDEX
 var day_index: int = DEFAULT_DAY_INDEX
 var year_index: int = DEFAULT_YEAR_INDEX
@@ -84,8 +88,7 @@ var debug_determinism_signature: int = DEBUG_DETERMINISM_HASH_SEED
 var debug_determinism_event_count: int = 0
 var debug_determinism_last_event: String = ""
 
-var _queued_command_records: Array = []
-var _next_command_enqueue_serial: int = 1
+var _command_queue: TimeCommandQueue = TIME_COMMAND_QUEUE_SCRIPT.new() as TimeCommandQueue
 
 var _part_of_day_ids: PackedStringArray = PackedStringArray([
 	CalendarIds.PART_OF_DAY_DAWN,
@@ -104,10 +107,9 @@ var _tick_progress_within_part: int = 0
 var _accumulated_sim_seconds: float = 0.0
 var _phase_listener_records_by_phase: Dictionary = {}
 var _next_phase_listener_registration_id: int = 1
-var _rng_streams: Dictionary = {}
+var _rng_manager: TimeRandomStreamManager = TIME_RANDOM_STREAM_MANAGER_SCRIPT.new() as TimeRandomStreamManager
 
-var _scheduled_trigger_records: Array = []
-var _next_scheduled_trigger_serial: int = 1
+var _trigger_queue: TimeTriggerQueue = TIME_TRIGGER_QUEUE_SCRIPT.new() as TimeTriggerQueue
 
 func _ready() -> void:
 	_initialize_phase_listener_registry()
@@ -115,6 +117,7 @@ func _ready() -> void:
 	_initialize_debug_trigger_metrics()
 	_initialize_debug_command_metrics()
 	_initialize_debug_determinism_metrics()
+	_rng_manager.set_root_seed(scenario_seed)
 	_refresh_run_seed_from_sim_root()
 	_validate_calendar_tokens()
 	set_process(true)
@@ -222,6 +225,7 @@ func apply_season_profile_bootstrap(season_profile_def: SeasonProfileDef) -> voi
 	_initialize_debug_trigger_metrics()
 	_initialize_debug_command_metrics()
 	_initialize_debug_determinism_metrics()
+	_rng_manager.set_root_seed(scenario_seed)
 	_refresh_run_seed_from_sim_root()
 	_reset_rng_streams()
 	_clear_scheduled_triggers()
@@ -355,17 +359,16 @@ func enqueue_command(
 		push_error("TimeService: command_type_id must not be empty.")
 		return ""
 
-	var record: SimCommandRecord = SimCommandRecord.new()
-	record.enqueue_serial = _next_command_enqueue_serial
-	record.command_id = _build_command_id(_next_command_enqueue_serial)
-	record.command_type_id = trimmed_command_type_id
-	record.created_tick = tick_index
-	record.source_id = trimmed_source_id
-	record.debug_label = debug_label
-	record.payload = payload.duplicate(true)
-
-	_next_command_enqueue_serial += 1
-	_queued_command_records.append(record)
+	var record: SimCommandRecord = _command_queue.enqueue_command(
+		trimmed_command_type_id,
+		payload,
+		trimmed_source_id,
+		debug_label,
+		tick_index
+	)
+	if record == null:
+		push_error("TimeService: failed to enqueue command '%s'." % trimmed_command_type_id)
+		return ""
 
 	var command_snapshot: Dictionary = record.to_snapshot()
 	command_enqueued.emit(command_snapshot)
@@ -374,37 +377,13 @@ func enqueue_command(
 	return record.command_id
 
 func cancel_queued_command(command_id: String) -> void:
-	var trimmed_command_id: String = command_id.strip_edges()
-	if trimmed_command_id.is_empty():
-		return
-
-	var filtered_records: Array = []
-
-	for record_variant: Variant in _queued_command_records:
-		var record: SimCommandRecord = record_variant as SimCommandRecord
-		if record == null:
-			continue
-
-		if record.command_id != trimmed_command_id:
-			filtered_records.append(record)
-
-	_queued_command_records = filtered_records
+	_command_queue.cancel_command(command_id)
 
 func get_queued_command_count() -> int:
-	return _queued_command_records.size()
+	return _command_queue.get_count()
 
 func get_queued_command_queue_preview(limit: int = 4) -> Array[Dictionary]:
-	var preview: Array[Dictionary] = []
-	var safe_limit: int = maxi(limit, 0)
-	var index: int = 0
-
-	while index < _queued_command_records.size() and index < safe_limit:
-		var record: SimCommandRecord = _queued_command_records[index] as SimCommandRecord
-		if record != null:
-			preview.append(record.to_snapshot())
-		index += 1
-
-	return preview
+	return _command_queue.build_queue_preview(limit)
 
 func get_phase_listener_count_total() -> int:
 	var total_count: int = 0
@@ -425,7 +404,7 @@ func get_phase_listener_counts_by_phase() -> Dictionary:
 		counts_by_phase[phase_id] = listener_records.size()
 
 	return counts_by_phase
-
+	
 func schedule_trigger_at_tick(
 	trigger_id: String,
 	trigger_type_id: String,
@@ -456,21 +435,18 @@ func schedule_trigger_at_tick(
 		)
 		return false
 
-	_remove_scheduled_trigger_by_id(trimmed_trigger_id)
-
-	var record: ScheduledTriggerRecord = ScheduledTriggerRecord.new()
-	record.schedule_serial = _next_scheduled_trigger_serial
-	record.trigger_id = trimmed_trigger_id
-	record.trigger_type_id = trimmed_trigger_type_id
-	record.scheduled_tick = scheduled_tick
-	record.created_tick = tick_index
-	record.source_phase_id = trimmed_source_phase_id
-	record.debug_label = debug_label
-	record.payload = payload.duplicate(true)
-
-	_next_scheduled_trigger_serial += 1
-	_scheduled_trigger_records.append(record)
-	_scheduled_trigger_records.sort_custom(_sort_scheduled_trigger_records)
+	var record: ScheduledTriggerRecord = _trigger_queue.schedule_trigger_at_tick(
+		trimmed_trigger_id,
+		trimmed_trigger_type_id,
+		scheduled_tick,
+		payload,
+		debug_label,
+		trimmed_source_phase_id,
+		tick_index
+	)
+	if record == null:
+		push_error("TimeService: failed to schedule trigger '%s'." % trimmed_trigger_id)
+		return false
 
 	_log_run_loop_event("trigger_scheduled", record.to_snapshot())
 	return true
@@ -496,49 +472,19 @@ func schedule_trigger_in_ticks(
 	)
 
 func cancel_scheduled_trigger(trigger_id: String) -> void:
-	var trimmed_trigger_id: String = trigger_id.strip_edges()
-	if trimmed_trigger_id.is_empty():
-		return
-
-	_remove_scheduled_trigger_by_id(trimmed_trigger_id)
+	_trigger_queue.cancel_trigger(trigger_id)
 
 func has_scheduled_trigger(trigger_id: String) -> bool:
-	var trimmed_trigger_id: String = trigger_id.strip_edges()
-	if trimmed_trigger_id.is_empty():
-		return false
-
-	for record_variant: Variant in _scheduled_trigger_records:
-		var record: ScheduledTriggerRecord = record_variant as ScheduledTriggerRecord
-		if record != null and record.trigger_id == trimmed_trigger_id:
-			return true
-
-	return false
+	return _trigger_queue.has_trigger(trigger_id)
 
 func get_scheduled_trigger_count() -> int:
-	return _scheduled_trigger_records.size()
+	return _trigger_queue.get_count()
 
 func get_next_scheduled_trigger_tick() -> int:
-	if _scheduled_trigger_records.is_empty():
-		return -1
-
-	var first_record: ScheduledTriggerRecord = _scheduled_trigger_records[0] as ScheduledTriggerRecord
-	if first_record == null:
-		return -1
-
-	return first_record.scheduled_tick
+	return _trigger_queue.get_next_scheduled_tick()
 
 func get_scheduled_trigger_queue_preview(limit: int = DEBUG_TRIGGER_QUEUE_PREVIEW_LIMIT) -> Array[Dictionary]:
-	var preview: Array[Dictionary] = []
-	var safe_limit: int = maxi(limit, 0)
-	var index: int = 0
-
-	while index < _scheduled_trigger_records.size() and index < safe_limit:
-		var record: ScheduledTriggerRecord = _scheduled_trigger_records[index] as ScheduledTriggerRecord
-		if record != null:
-			preview.append(record.to_snapshot())
-		index += 1
-
-	return preview
+	return _trigger_queue.build_queue_preview(limit)
 
 func ensure_rng_stream(stream_id: String) -> void:
 	var trimmed_stream_id: String = stream_id.strip_edges()
@@ -546,81 +492,26 @@ func ensure_rng_stream(stream_id: String) -> void:
 		push_error("TimeService: RNG stream_id must not be empty.")
 		return
 
-	if _rng_streams.has(trimmed_stream_id):
+	var created_stream_snapshot: Dictionary = _rng_manager.ensure_rng_stream(trimmed_stream_id)
+	if created_stream_snapshot.is_empty():
 		return
 
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	var stream_seed: int = _build_stream_seed(scenario_seed, trimmed_stream_id)
-	rng.seed = stream_seed
-
-	_rng_streams[trimmed_stream_id] = {
-		"rng": rng,
-		"initial_seed": stream_seed,
-		"draw_count": 0,
-	}
-
-	_log_run_loop_event("rng_stream_created", {
-		"stream_id": trimmed_stream_id,
-		"initial_seed": stream_seed,
-		"rng_stream_count": _rng_streams.size(),
-	})
+	_log_run_loop_event("rng_stream_created", created_stream_snapshot)
 
 func randf_stream(stream_id: String) -> float:
-	var rng: RandomNumberGenerator = _require_rng_stream(stream_id)
-	if rng == null:
-		return 0.0
-
-	var value: float = rng.randf()
-	_increment_rng_stream_draw_count(stream_id)
-	return value
+	return _rng_manager.randf_stream(stream_id)
 
 func randi_stream(stream_id: String) -> int:
-	var rng: RandomNumberGenerator = _require_rng_stream(stream_id)
-	if rng == null:
-		return 0
-
-	var value: int = rng.randi()
-	_increment_rng_stream_draw_count(stream_id)
-	return value
+	return _rng_manager.randi_stream(stream_id)
 
 func randi_range_stream(stream_id: String, from_value: int, to_value: int) -> int:
-	var rng: RandomNumberGenerator = _require_rng_stream(stream_id)
-	if rng == null:
-		return from_value
-
-	var value: int = rng.randi_range(from_value, to_value)
-	_increment_rng_stream_draw_count(stream_id)
-	return value
+	return _rng_manager.randi_range_stream(stream_id, from_value, to_value)
 
 func shuffle_array_with_stream(values: Array, stream_id: String) -> Array:
-	var shuffled_values: Array = values.duplicate(true)
-	var last_index: int = shuffled_values.size() - 1
-
-	while last_index > 0:
-		var swap_index: int = randi_range_stream(stream_id, 0, last_index)
-		var temp_value: Variant = shuffled_values[last_index]
-		shuffled_values[last_index] = shuffled_values[swap_index]
-		shuffled_values[swap_index] = temp_value
-		last_index -= 1
-
-	return shuffled_values
+	return _rng_manager.shuffle_array_with_stream(values, stream_id)
 
 func get_rng_state_snapshot() -> Dictionary:
-	var snapshot: Dictionary = {}
-
-	for stream_id: String in _rng_streams.keys():
-		var stream_record: Dictionary = _rng_streams.get(stream_id, {})
-		var rng: RandomNumberGenerator = stream_record.get("rng")
-		if rng == null:
-			continue
-
-		snapshot[stream_id] = {
-			"initial_seed": int(stream_record.get("initial_seed", 0)),
-			"draw_count": int(stream_record.get("draw_count", 0)),
-			"state": int(rng.state),
-		}
-
-	return snapshot
+	return _rng_manager.get_state_snapshot()
 
 func get_calendar_snapshot() -> Dictionary:
 	return {
@@ -642,7 +533,7 @@ func get_calendar_snapshot() -> Dictionary:
 		"scenario_seed": scenario_seed,
 		"phase_listener_count_total": get_phase_listener_count_total(),
 		"phase_listener_counts_by_phase": get_phase_listener_counts_by_phase(),
-		"rng_stream_count": _rng_streams.size(),
+		"rng_stream_count": _rng_manager.get_stream_count(),
 		"debug_visible_phase_id": debug_visible_phase_id,
 		"debug_visible_phase_tick_index": debug_visible_phase_tick_index,
 		"debug_visible_phase_transition_serial": debug_visible_phase_transition_serial,
@@ -722,11 +613,9 @@ func _run_internal_phase_logic(phase_id: String, phase_context: Dictionary) -> v
 func _run_command_intake_phase(phase_context: Dictionary) -> void:
 	# Only process the commands that existed when this phase began.
 	# Commands enqueued later in the same tick wait until the next tick.
-	if _queued_command_records.is_empty():
+	var queued_commands_to_process: Array = _command_queue.drain_all()
+	if queued_commands_to_process.is_empty():
 		return
-
-	var queued_commands_to_process: Array = _queued_command_records.duplicate()
-	_queued_command_records.clear()
 
 	for record_variant: Variant in queued_commands_to_process:
 		var record: SimCommandRecord = record_variant as SimCommandRecord
@@ -938,19 +827,14 @@ func _record_phase_entry_for_debug(phase_id: String) -> void:
 	_append_determinism_event("phase:t%s:%s" % [tick_index, phase_id])
 
 func _resolve_due_scheduled_triggers(phase_context: Dictionary) -> void:
-	_scheduled_trigger_records.sort_custom(_sort_scheduled_trigger_records)
+	var due_records: Array = _trigger_queue.pop_due_records(tick_index)
 
-	while not _scheduled_trigger_records.is_empty():
-		var first_record: ScheduledTriggerRecord = _scheduled_trigger_records[0] as ScheduledTriggerRecord
-		if first_record == null:
-			_scheduled_trigger_records.pop_front()
+	for record_variant: Variant in due_records:
+		var record: ScheduledTriggerRecord = record_variant as ScheduledTriggerRecord
+		if record == null:
 			continue
 
-		if first_record.scheduled_tick > tick_index:
-			break
-
-		_scheduled_trigger_records.pop_front()
-		_apply_resolved_trigger_record(first_record, phase_context)
+		_apply_resolved_trigger_record(record, phase_context)
 
 func _apply_resolved_trigger_record(record: ScheduledTriggerRecord, phase_context: Dictionary) -> void:
 	debug_last_resolved_trigger_id = record.trigger_id
@@ -1025,67 +909,11 @@ func _schedule_internal_next_day_start_trigger() -> void:
 		SimPhaseIds.PHASE_END_OF_TICK_BOOKKEEPING
 	)
 
-func _sort_scheduled_trigger_records(left_value: Variant, right_value: Variant) -> bool:
-	var left_record: ScheduledTriggerRecord = left_value as ScheduledTriggerRecord
-	var right_record: ScheduledTriggerRecord = right_value as ScheduledTriggerRecord
-
-	if left_record == null and right_record == null:
-		return false
-
-	if left_record == null:
-		return false
-
-	if right_record == null:
-		return true
-
-	if left_record.scheduled_tick != right_record.scheduled_tick:
-		return left_record.scheduled_tick < right_record.scheduled_tick
-
-	return left_record.schedule_serial < right_record.schedule_serial
-
-func _remove_scheduled_trigger_by_id(trigger_id: String) -> void:
-	var filtered_records: Array = []
-
-	for record_variant: Variant in _scheduled_trigger_records:
-		var record: ScheduledTriggerRecord = record_variant as ScheduledTriggerRecord
-		if record == null:
-			continue
-
-		if record.trigger_id != trigger_id:
-			filtered_records.append(record)
-
-	_scheduled_trigger_records = filtered_records
-
 func _clear_scheduled_triggers() -> void:
-	_scheduled_trigger_records.clear()
-	_next_scheduled_trigger_serial = 1
-
-func _require_rng_stream(stream_id: String) -> RandomNumberGenerator:
-	var trimmed_stream_id: String = stream_id.strip_edges()
-	if trimmed_stream_id.is_empty():
-		push_error("TimeService: RNG stream_id must not be empty.")
-		return null
-
-	ensure_rng_stream(trimmed_stream_id)
-
-	var stream_record: Dictionary = _rng_streams.get(trimmed_stream_id, {})
-	var rng: RandomNumberGenerator = stream_record.get("rng")
-	if rng == null:
-		push_error("TimeService: failed to resolve RNG stream '%s'." % trimmed_stream_id)
-
-	return rng
-
-func _increment_rng_stream_draw_count(stream_id: String) -> void:
-	if not _rng_streams.has(stream_id):
-		return
-
-	var stream_record: Dictionary = _rng_streams.get(stream_id, {})
-	var draw_count: int = int(stream_record.get("draw_count", 0))
-	stream_record["draw_count"] = draw_count + 1
-	_rng_streams[stream_id] = stream_record
+	_trigger_queue.clear()
 
 func _reset_rng_streams() -> void:
-	_rng_streams.clear()
+	_rng_manager.clear_streams()
 
 func _refresh_run_seed_from_sim_root() -> void:
 	var sim_root: Node = get_node_or_null("/root/SimRoot")
@@ -1101,25 +929,11 @@ func _refresh_run_seed_from_sim_root() -> void:
 		return
 
 	scenario_seed = resolved_seed
-	_reset_rng_streams()
+	_rng_manager.set_root_seed(scenario_seed)
 
 	_log_run_loop_event("scenario_seed_changed", {
 		"scenario_seed": scenario_seed,
 	})
-
-func _build_stream_seed(root_seed: int, stream_id: String) -> int:
-	var stream_hash: int = 2166136261
-	var stream_bytes: PackedByteArray = stream_id.to_utf8_buffer()
-
-	for stream_byte: int in stream_bytes:
-		stream_hash = int((stream_hash ^ stream_byte) & 0x7fffffff)
-		stream_hash = int((stream_hash * 16777619) & 0x7fffffff)
-
-	var mixed_seed: int = int((root_seed ^ stream_hash) & 0x7fffffff)
-	if mixed_seed == 0:
-		mixed_seed = 1
-
-	return mixed_seed
 
 func _validate_calendar_tokens() -> void:
 	if not CalendarIds.is_valid_season_id(season_id):
@@ -1183,8 +997,4 @@ func _apply_command_record(record: SimCommandRecord, phase_context: Dictionary) 
 	queued_command_processed.emit(command_snapshot, phase_context)
 
 func _clear_queued_commands() -> void:
-	_queued_command_records.clear()
-	_next_command_enqueue_serial = 1
-
-func _build_command_id(enqueue_serial: int) -> String:
-	return "command.%010d" % enqueue_serial
+	_command_queue.clear()

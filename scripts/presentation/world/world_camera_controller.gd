@@ -1,6 +1,8 @@
 extends Camera2D
 class_name WorldCameraController
 
+const SIM_ROOT_LOCATOR_SCRIPT: Script = preload("res://scripts/presentation/sim_root_locator.gd")
+
 # These zoom levels are chosen so a 32 px cell stays on clean sizes:
 # 1.50	-> 48 px
 # 1.25  -> 40 px
@@ -211,4 +213,4 @@ func _get_world_rect() -> Rect2:
 	)
 
 func _sim_root() -> Node:
-	return get_node_or_null("/root/SimRoot")
+	return SIM_ROOT_LOCATOR_SCRIPT.get_sim_root(self)

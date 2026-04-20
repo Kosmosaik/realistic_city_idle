@@ -1,6 +1,8 @@
 extends Node2D
 class_name WorldCellInspectorProbe
 
+const SIM_ROOT_LOCATOR_SCRIPT: Script = preload("res://scripts/presentation/sim_root_locator.gd")
+
 func _ready() -> void:
 	set_process(true)
 	set_process_unhandled_input(true)
@@ -45,4 +47,4 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _sim_root() -> Node:
-	return get_node_or_null("/root/SimRoot")
+	return SIM_ROOT_LOCATOR_SCRIPT.get_sim_root(self)

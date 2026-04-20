@@ -8,6 +8,7 @@ const TERRAIN_INSPECTOR_PANEL_SCRIPT: Script = preload("res://scripts/presentati
 const DEV_HUD_SCRIPT: Script = preload("res://scripts/presentation/ui/dev_hud.gd")
 const WORLD_CELL_INSPECTOR_PROBE_SCRIPT: Script = preload("res://scripts/presentation/world/world_cell_inspector_probe.gd")
 const WORLD_CAMERA_CONTROLLER_SCRIPT: Script = preload("res://scripts/presentation/world/world_camera_controller.gd")
+const SIM_ROOT_LOCATOR_SCRIPT: Script = preload("res://scripts/presentation/sim_root_locator.gd")
 
 const TERRAIN_RENDERER_NAME: String = "AuthoritativeTerrainRenderer"
 const TERRAIN_OVERLAY_RENDERER_NAME: String = "TerrainOverlayRenderer"
@@ -26,7 +27,7 @@ func _ready() -> void:
 	_ensure_dev_hud()
 	_ensure_world_cell_inspector_probe()
 
-	var sim_root: Node = get_node_or_null("/root/SimRoot")
+	var sim_root: Node = _sim_root()
 	if sim_root != null and sim_root.has_method("register_world_root"):
 		sim_root.call("register_world_root", self)
 
@@ -98,6 +99,9 @@ func _ensure_world_cell_inspector_probe() -> void:
 	var world_cell_inspector_probe: Node2D = WORLD_CELL_INSPECTOR_PROBE_SCRIPT.new()
 	world_cell_inspector_probe.name = WORLD_CELL_INSPECTOR_PROBE_NAME
 	add_child(world_cell_inspector_probe)
+
+func _sim_root() -> Node:
+	return SIM_ROOT_LOCATOR_SCRIPT.get_sim_root(self)
 
 func get_camera_debug_snapshot() -> Dictionary:
 	var camera: Node = get_node_or_null(CAMERA_NAME)

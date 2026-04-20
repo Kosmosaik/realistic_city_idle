@@ -1,6 +1,8 @@
 extends Node2D
 class_name AuthoritativeTerrainRenderer
 
+const SIM_ROOT_LOCATOR_SCRIPT: Script = preload("res://scripts/presentation/sim_root_locator.gd")
+
 const COLOR_OPEN_GROUND: Color = Color8(86, 97, 75)
 const COLOR_OPEN_GROUND_LIGHT: Color = Color8(101, 113, 88)
 const COLOR_DRY_GROUND: Color = Color8(112, 104, 83)
@@ -1242,7 +1244,7 @@ func _get_zoom_band_id() -> String:
 	return "mid"
 
 func _sim_root() -> Node:
-	return get_node_or_null("/root/SimRoot")
+	return SIM_ROOT_LOCATOR_SCRIPT.get_sim_root(self)
 
 func _hash_01(cell_index: Vector2i, salt: int) -> float:
 	var sim_root: Node = _sim_root()

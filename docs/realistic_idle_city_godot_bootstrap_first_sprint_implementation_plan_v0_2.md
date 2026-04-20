@@ -1,309 +1,105 @@
 # Realistic Idle City — Godot Bootstrap / First Sprint Implementation Plan v0.2
-
-> Filename retained for replacement convenience. This version now reflects the project **after Branch 04** and reframes Sprint 1 as effectively complete enough to close, with one short cleanup branch next.
+_Last synced:_ 2026-04-17  
+_Status:_ historical implementation plan, updated to reflect current repo state
 
 ## 1. Purpose
 
-This document describes what Sprint 1 was meant to establish on the Godot side and what is now actually in place.
+This document records the implementation plan that established the project’s first real bootstrap/runtime path.
 
-Sprint 1 was the “make the project technically buildable” sprint, not the “make the full game” sprint.
+It remains important because many current systems still inherit their architectural contract from this sprint:
+- definition-driven bootstrap
+- active scenario selection
+- authoritative runtime world state
+- explicit separation of runtime truth from presentation/debug UI
 
-That meant the sprint had to prove:
-
-- a clean Godot bootstrap shell
-- data-driven startup resolution
-- deterministic time/run-loop scaffolding
-- authoritative world-state scaffolding
-- a real render/inspect path for that world truth
-- enough debug surface to safely continue development
+This file is now partly **historical**, because the project has already moved beyond the first sprint.
+It has been retained and synced so it stays useful instead of misleading.
 
 ---
 
-## 2. Current Sprint 1 status
+## 2. Current status summary
 
-### Status summary
-- **Branch 00 — complete**
-- **Branch 01 — complete enough to close**
-- **Branch 02 — complete enough to close**
-- **Branch 03 — complete enough to close**
-- **Branch 04 — complete enough to close**
-- **Immediate next branch: Branch 05 — audit and cleanup**
+The first-sprint/bootstrap goals are complete enough to close.
 
-### Practical reading
-Sprint 1's main technical objective has been achieved.
+What now exists in the repo:
+- definition registry and validation flow
+- scenario / stage / map preset / worldgen / season bootstrap
+- authoritative `WorldState` runtime foundation
+- authored map loading into runtime cells/patches/reveal sources/terrain objects
+- authoritative terrain rendering and terrain inspection/debug overlays
+- cleaned-up helper modules extracted during Branch 05
 
-The project is no longer just a bootstrap shell:
-- it resolves definitions
-- it runs deterministically
-- it loads authored terrain into authoritative runtime state
-- it renders and inspects that world state in a usable way
-
-That means the next step should be a cleanup / closeout branch, not another big feature pile-on.
+This means the bootstrap sprint should no longer be treated as the active work branch.
 
 ---
 
-## 3. What Sprint 1 now proves
+## 3. What changed after the original plan
 
-### 3.1 Bootstrap and definitions
-The project already proves:
-- boot scene entry works
-- autoload shell is in place
-- definition loading and validation works
-- scenario / map preset / worldgen / season resolution works
-- failure cases are surfaced in a readable way
+After the original bootstrap work, the project continued through authored-world and renderer/debug branches.
 
-### 3.2 Deterministic runtime backbone
-The project already proves:
-- `TimeService` owns deterministic ticking
-- phase order is explicit
-- pause / resume / speed / single-step controls exist
-- queued commands and scheduled triggers are processed deterministically
-- visibility refresh has a proper phase home
-- debug determinism inspection exists
-
-### 3.3 Authoritative world substrate
-The project already proves:
-- world state exists outside presentation scenes
-- authored map data can be loaded into runtime truth
-- cells, chunks, patches, and reveal sources exist as real runtime structures
-- terrain/buildability/site-related facts can be read from runtime state
-- later systems have a trustworthy substrate to build on
-
-### 3.4 Authoritative rendering and reading path
-The project already proves:
-- terrain can render from authoritative world truth
-- overlays can render from authoritative values
-- patch boundaries can be visualized
-- fog / remembered / visible state can be shown
-- the camera can move around the world cleanly
-- the user/developer can inspect cells and read why a tile is the way it is
+Notable follow-on architecture now present:
+- `AuthoredMapLoader` is no longer carrying every sub-responsibility alone
+- terrain overlay/debug state is explicitly modeled and presentation-aware
+- HUD formatting and some utility concerns were split into dedicated helpers
+- the repo no longer depends on the retired placeholder world path
 
 ---
 
-## 4. Actual current implementation baseline
+## 4. Stable architectural outcomes from this sprint
 
-## 4.1 Entry chain
-Current entry path:
-- `scenes/bootstrap/boot_scene.tscn`
-- `scenes/world/test_world_scene.tscn`
+These remain the important takeaways from the first sprint:
 
-## 4.2 Active autoload shell
-- `EventBus`
-- `TelemetryService`
-- `SaveService`
-- `TimeService`
-- `DefinitionRegistry`
-- `SimRoot`
-- `AppRoot`
+### 4.1 Definitions drive bootstrap
+Scenarios and related content should still be resolved through definitions/resources, not hardcoded scene setup.
 
-## 4.3 Authoritative world runtime currently in use
-- `WorldState`
-- `WorldCellState`
-- `WorldChunkState`
-- `WorldPatchState`
-- `WorldRevealSourceState`
-- `AuthoredMapLoader`
-- `WorldVisibilityService`
+### 4.2 Runtime world truth is authoritative
+World cells, patches, reveal sources, and terrain-object validation live in runtime state, not in decorative renderer-only structures.
 
-## 4.4 Presentation stack currently in use
-`WorldRootController` now ensures:
-- `WorldCameraController`
-- `AuthoritativeTerrainRenderer`
-- `TerrainOverlayRenderer`
-- `TerrainOverlayOutlineRenderer`
-- `TerrainInspectorPanel`
-- `DevHud`
-- `WorldCellInspectorProbe`
+### 4.3 Presentation should remain a consumer
+Terrain rendering, overlays, HUDs, and inspectors should continue consuming runtime truth instead of inventing parallel state.
 
-## 4.5 Current debug / reading surface
-Current active debug reading path includes:
-- HUD summary and help
-- overlay mode state
-- overlay legend text
-- visibility counts
-- camera snapshot
-- hovered / selected cell info
-- terrain inspector panel
-- world snapshot data from `SimRoot`
+### 4.4 Save migration is not a priority during this phase
+Current save files remain disposable during this hardening/prototype stage unless explicitly elevated later.
 
 ---
 
-## 5. Branch-by-branch Sprint 1 reading
+## 5. Current file/status interpretation
 
-## Branch 00 — repo bootstrap
-### Status
-Complete.
+When this document mentions earlier bootstrap targets, interpret them as:
+- **implemented**
+- **validated enough for current prototype scope**
+- **not the immediate next branch**
 
-### Delivered
-- project shell
-- autoload base
-- initial boot/dev scenes
-- initial debug HUD
-- initial placeholder renderer path
-
-### Why it is not the current truth anymore
-The placeholder renderer path was a starting scaffold, not the intended long-term world architecture.
+The immediate next branch is no longer “finish bootstrap.”  
+It is now **procedural terrain generation foundation**.
 
 ---
 
-## Branch 01 — core definitions and IDs
-### Status
-Complete enough to close.
+## 6. Branch 05 closeout note
 
-### Delivered
-- typed definition resources
-- registry/validation
-- bootstrap resolution
-- canonical content pack foundation
+Branch 05 addressed the main cleanup debt that had accumulated after the original bootstrap sprint:
+- modular helper extraction from larger scripts
+- repo artifact cleanup
+- implementation-doc sync
+- final pre-procgen hardening pass
 
-### Why it mattered
-It made later branches data-driven instead of hardcoded.
+So the bootstrap stack should now be considered a **stable platform** rather than an active refactor target.
 
 ---
 
-## Branch 02 — simulation clock and run loop
-### Status
-Complete enough to close.
+## 7. Use this document together with
 
-### Delivered
-- deterministic phase loop
-- command queue
-- scheduled triggers
-- debug stepping / pause / speed controls
-- deterministic inspection surface
+Read this file together with:
+- `docs/realistic_idle_city_development_roadmap_v0_1.md`
+- `docs/realistic_idle_city_godot_project_scene_architecture_v0_1.md`
+- `docs/realistic_idle_city_godot_class_file_responsibility_matrix_v0_1.md`
+- `docs/realistic_idle_city_procedural_terrain_generation_implementation_plan_v0_1.md`
 
-### Why it mattered
-It created the runtime backbone that later world systems can plug into safely.
+Those documents reflect the current branch direction more directly.
 
 ---
 
-## Branch 03 — authoritative world data + authored maps
-### Status
-Complete enough to close.
+## 8. Final note
 
-### Delivered
-- world runtime state objects
-- authored map loader
-- authored fixture path
-- patch summaries
-- reveal source loading
-- visibility service binding
-- `SimRoot` world registration and accessors
-
-### Why it mattered
-This is where the project stopped pretending the scene tree itself was the world.
-
----
-
-## Branch 04 — renderer + overlays + camera + fog
-### Status
-Complete enough to close.
-
-### Delivered
-- authoritative terrain renderer
-- overlay renderer
-- outline renderer
-- camera controller
-- world cell probe
-- terrain inspector panel
-- richer HUD integration
-- fog / remembered / visible presentation path
-
-### Why it mattered
-This branch proved the Branch 03 world data is actually practical to use and inspect.
-
----
-
-## 6. Sprint 1 exit criteria review
-
-### Exit criterion: clean bootstrap shell
-Met.
-
-### Exit criterion: data-driven startup path
-Met.
-
-### Exit criterion: deterministic tick backbone
-Met.
-
-### Exit criterion: authoritative world substrate
-Met.
-
-### Exit criterion: render and inspect that world truth
-Met.
-
-### Exit criterion: adequate debug visibility for continued development
-Met.
-
-### Exit criterion: “enough to continue into terrain/system work safely”
-Met.
-
-### Remaining closeout item
-A short explicit cleanup branch is still recommended before continuing.
-
----
-
-## 7. Immediate next branch
-
-## Branch 05 — audit-and-cleanup
-### Goal
-Close Sprint 1 cleanly and prepare the repo for the next feature track.
-
-### Must include
-- document sync after Branch 03–04
-- cleanup of stale placeholder references
-- cleanup of obvious temp/stray scene artifacts
-- verify current scene/runtime responsibility docs
-- verify README / roadmap / changelog / architecture docs all agree
-- optional brief manual verification note for the closeout
-
-### Must not become
-- a stealth new feature branch
-- a “while we are here” mega-branch
-- a rewrite of already-working runtime boundaries
-
-### Exit criteria
-- repo is cleaner than before the branch started
-- documentation matches the codebase
-- no obvious dead placeholder debris remains
-- next feature branch can start from a stable handoff point
-
----
-
-## 8. Preferred next feature direction after cleanup
-
-The preferred next feature direction after Branch 05 is:
-
-## Terrain procgen foundation
-Follow `docs/realistic_idle_city_terrain_generation_branch_plan_v0_1.md`.
-
-That is the safest next move because:
-- the authoritative terrain substrate exists
-- the overlay/debug tooling exists
-- the project now has the exact calibration/debug environment procgen needed
-
-This is a better next step than skipping ahead to broader gameplay/NPC systems on top of a still-maturing world foundation.
-
----
-
-## 9. Guardrails
-
-- do not move world authority back into presentation scripts
-- do not grow HUD panels into hidden state owners
-- do not re-open closed branch scopes unless a real bug requires it
-- keep the cleanup branch intentionally short and explicit
-- continue using authored truth + overlays as the calibration baseline for later procgen work
-
----
-
-## 10. Final position
-
-Sprint 1 did what it needed to do.
-
-The project now has:
-- a functioning bootstrap shell
-- validated definitions
-- deterministic runtime scaffolding
-- authoritative world state
-- authoritative world rendering and inspection
-
-That means the right next step is to **close the sprint cleanly**, then move into the next terrain-focused feature track from a tidier baseline.
+Do not reopen the first sprint as a broad cleanup/refactor project.
+Keep using its contracts, but direct new implementation effort into the next world-generation branch.

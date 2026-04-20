@@ -8,12 +8,12 @@ var patch_ids: PackedStringArray = PackedStringArray()
 
 var elevation_step: int = 0
 var slope_class: String = "flat"
-var landform_type: String = "plain"
+var landform_type: String = "flat"
 var surface_water_type: String = "none"
 var drainage_class: String = "good"
 var wetness_tendency: String = "balanced"
 var ground_firmness_class: String = "firm"
-var vegetation_cover_class: String = "grass_sparse"
+var vegetation_cover_class: String = "grass"
 
 var movement_cost: float = 1.0
 var haul_cost_multiplier: float = 1.0

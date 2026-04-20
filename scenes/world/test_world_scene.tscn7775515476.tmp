@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://c235o41yfrm4d"]
-
-[ext_resource type="Script" uid="uid://vhr67md3jd7m" path="res://scripts/presentation/world/world_root_controller.gd" id="1_brsib"]
-
-[node name="TestWorldScene" type="Node2D" unique_id=1393816363]
-script = ExtResource("1_brsib")

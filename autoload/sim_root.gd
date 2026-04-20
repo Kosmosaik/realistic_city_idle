@@ -1,34 +1,22 @@
 extends Node
 
+const BOOT_DEFAULTS_SCRIPT: Script = preload("res://scripts/core/boot_defaults.gd")
 const AUTHORED_MAP_LOADER_SCRIPT: Script = preload("res://scripts/runtime/world/authored_map_loader.gd")
 const WORLD_VISIBILITY_SERVICE_SCRIPT: Script = preload("res://scripts/runtime/world/world_visibility_service.gd")
 
-const DEFAULT_SCENARIO_ID: String = "scenario.dev.temperate_valley"
-const DEFAULT_STAGE_ID: String = "stage.lone_survivor"
-const DEFAULT_MAP_PRESET_ID: String = "starter_map_balanced"
-const DEFAULT_WORLDGEN_PROFILE_ID: String = "authored_starter_temperate_valley"
-const DEFAULT_SEASON_PROFILE_ID: String = "temperate_four_season_basic"
-const DEFAULT_SEED: int = 100001
+const TERRAIN_DEBUG_VISUAL_CONFIG_SCRIPT: Script = preload(
+	"res://scripts/presentation/world/terrain_debug_visual_config.gd"
+)
+var _terrain_debug_visual_config: TerrainDebugVisualConfig = TERRAIN_DEBUG_VISUAL_CONFIG_SCRIPT.new()
+
 const INVALID_CELL_INDEX: Vector2i = Vector2i(-1, -1)
 
-const DEBUG_OVERLAY_MODE_IDS: Array[String] = [
-	"off",
-	"elevation",
-	"drainage",
-	"wetness",
-	"vegetation",
-	"buildability",
-	"site_score",
-	"patch_boundaries",
-	"fog_memory",
-]
-
-var scenario_id: String = DEFAULT_SCENARIO_ID
-var stage_id: String = DEFAULT_STAGE_ID
-var map_preset_id: String = DEFAULT_MAP_PRESET_ID
-var worldgen_profile_id: String = DEFAULT_WORLDGEN_PROFILE_ID
-var season_profile_id: String = DEFAULT_SEASON_PROFILE_ID
-var seed: int = DEFAULT_SEED
+var scenario_id: String = BOOT_DEFAULTS_SCRIPT.get_default_scenario_id()
+var stage_id: String = BOOT_DEFAULTS_SCRIPT.get_default_stage_id()
+var map_preset_id: String = BOOT_DEFAULTS_SCRIPT.get_default_map_preset_id()
+var worldgen_profile_id: String = BOOT_DEFAULTS_SCRIPT.get_default_worldgen_profile_id()
+var season_profile_id: String = BOOT_DEFAULTS_SCRIPT.get_default_season_profile_id()
+var seed: int = BOOT_DEFAULTS_SCRIPT.get_default_seed()
 var seed_is_overridden: bool = false
 
 var world_root: Node = null
@@ -254,7 +242,7 @@ func build_world_state_from_active_definitions() -> bool:
 		built_world_state.fixture_id,
 		seed
 	]
-	built_world_state.primary_terrain_profile_id = worldgen_profile_def.get_definition_id()
+	built_world_state.primary_terrain_profile_id = worldgen_profile_def.get_primary_terrain_profile_id()
 
 	world_state = built_world_state
 	debug_hovered_cell_index = INVALID_CELL_INDEX
@@ -392,7 +380,7 @@ func get_debug_overlay_mode_id() -> String:
 
 
 func get_debug_overlay_mode_ids() -> Array[String]:
-	return DEBUG_OVERLAY_MODE_IDS
+	return _terrain_debug_visual_config.get_overlay_mode_ids()
 
 
 func set_debug_overlay_mode_id(new_overlay_mode_id: String) -> void:
@@ -400,19 +388,21 @@ func set_debug_overlay_mode_id(new_overlay_mode_id: String) -> void:
 	if trimmed_overlay_mode_id.is_empty():
 		return
 
-	if not DEBUG_OVERLAY_MODE_IDS.has(trimmed_overlay_mode_id):
+	if not _terrain_debug_visual_config.is_valid_overlay_mode_id(trimmed_overlay_mode_id):
 		return
 
 	debug_overlay_mode_id = trimmed_overlay_mode_id
 
 
 func cycle_debug_overlay_mode(direction: int = 1) -> String:
-	var mode_count: int = DEBUG_OVERLAY_MODE_IDS.size()
+	var overlay_mode_ids: Array[String] = _terrain_debug_visual_config.get_overlay_mode_ids()
+	var mode_count: int = overlay_mode_ids.size()
+
 	if mode_count <= 0:
-		debug_overlay_mode_id = "off"
+		debug_overlay_mode_id = _terrain_debug_visual_config.get_default_overlay_mode_id()
 		return debug_overlay_mode_id
 
-	var current_index: int = DEBUG_OVERLAY_MODE_IDS.find(debug_overlay_mode_id)
+	var current_index: int = overlay_mode_ids.find(debug_overlay_mode_id)
 	if current_index < 0:
 		current_index = 0
 
@@ -421,9 +411,8 @@ func cycle_debug_overlay_mode(direction: int = 1) -> String:
 		direction_step = -1
 
 	var next_index: int = posmod(current_index + direction_step, mode_count)
-	debug_overlay_mode_id = DEBUG_OVERLAY_MODE_IDS[next_index]
+	debug_overlay_mode_id = overlay_mode_ids[next_index]
 	return debug_overlay_mode_id
-
 
 func is_debug_terrain_inspector_visible() -> bool:
 	return debug_terrain_inspector_visible
